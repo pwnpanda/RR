@@ -1,4 +1,4 @@
-# Recon tool based on [LazyRecon](https://google.com) & [magicRecon](https://google.com)
+# Recon tool based on [LazyRecon](https://github.com/nahamsec/lazyrecon) & [MagicRecon](https://github.com/robotshell/magicRecon)
 
 ```
 __________        ___.    .__       /\         __________
@@ -14,5 +14,5 @@ __________        ___.    .__       /\         __________
  - [x] Supports colors and is optimized for bash
  - [x] Static definition of output and tool directories at top of script for easy customization
  - [x] Error checks for logging and debugging
- - [ ] Optimized for multithreading where possible using [Tool from codingo that I forgot the name of](https://google.com)
+ - [x] Optimized for multi-threading where possible using [Interlace](https://github.com/codingo/Interlace)
  

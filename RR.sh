@@ -6,37 +6,64 @@
 #
 #
 ################################################
+
+########################################
+
+# Startup checks
+# check if running as root
+if [ "$EUID" -ne 0 ]; then
+  printE "Run as root!"
+  exit
+fi
+
+########################################
+
+# Check that there is a domain supplied
+if [ $# -eq 0 ]
+  then
+    echo "No arguments supplied, please supply a domain!"
+    exit
+fi
+# Domain is given
+domain=$1
+# today
+todate=$(date +"%Y-%m-%d")
+########################################
+
 # Customizations
-auquatoneThreads=5
-subdomainThreads=10
 FFUF_Threads=50
+#----------------------
+domain=
+#----------------------
+TOOLDIR=/root/Bug_Bounty/tools
+LOGDIR="/root/Bug_Bounty/logs/$domain/$todate"
+# TODO rename to git dir
+RESDIR="/root/Bug_Bounty/reports/$domain/$todate"
+gobusterDNSThreads=50
+#----------------------
+# Add go binaries
+PATH=$PATH:/root/go/bin
+#----------------------
+
+#################################################
+# MagicRecon
+#----------------------
+githubToken=YOUR GITHUB TOKEN
+#----------------------
 subjackThreads=100
 subjackTime=30
 aquatoneTimeout=50000
-
-githubToken=YOUR GITHUB TOKEN
-SECONDS=0
-domain=
-subreport=
-
+#----------------------
 #Paths
-TOOLDIR=/root/Bug_Bounty/tools
-result_DIR=/root/Bug_Bounty/logs
-dirsearchWordlist=$tooldir/dirsearch/db/dicc.txt
-massdnsWordlist=$tooldir/clean-jhaddix-dns.txt
-chromiumPath=/snap/bin/chromium
-
-DNS_WORD_LIST=$tooldir/SecLists/Discovery/DNS/namelist.txt
-DIR_WORD_LIST=$tooldir/SecLists/Discovery/Web-Content/raft-medium-files-directories.txt
-# Add go binaries
-PATH=$PATH:/root/go/bin
+DNS_WORD_LIST=$TOOLDIR/SecLists/Discovery/DNS/namelist.txt
+DIR_WORD_LIST=$TOOLDIR/SecLists/Discovery/Web-Content/raft-medium-files-directories.txt
+#----------------------
 
 #COLORS
 BOLD="\e[1m"
 RED=$(tput setaf 1)
 GREEN=$(tput setaf 2)
 YELLOW=$(tput setaf 3)
-RESET=$(tput sgr0)
 
 ########################################
 # Happy Hunting
@@ -52,7 +79,7 @@ print() {
 
 # Print warning
 printW() {
-  echo -e "${BOLD}${GREEN}[?] $1"
+  echo -e "${BOLD}${YELLOW}[?] $1"
 }
 
 # Print error
@@ -60,8 +87,8 @@ printE() {
   echo -e "${BOLD}${RED}[!] $1"
 }
 
-#Command counter
-cmd=0
+# Command counter
+CMD=0
 check() {
   if [[ $? == 0 ]]; then
     print " - [$((CMD += 1))] $1 executed successfully"
@@ -69,13 +96,7 @@ check() {
     printE " - [$((CMD += 1))] $1 encountered an error"
   fi
 }
-########################################
-
-#check if running as root
-if [ "$EUID" -ne 0 ]
-  then printE "Run as root!"
-  exit
-fi
+####################################
 
 # clear screen
 clear
@@ -89,82 +110,77 @@ __________        ___.    .__       /\         __________
         \/             \/          \/      \/          \/      \/     \/             \/
 \n\n" | lolcat
 
-
 echo -e ""
 echo -e "${BOLD}${GREEN}[+] STEP 1: Starting Subdomain Enumeration"
 
 #Amass
 print "Starting Amass"
-amass enum -norecursive -noalts -d $1 -o domains.txt
+amass enum -norecursive -noalts -d "$1" -o "$LOGDIR/domains.txt"
 check "Amass"
 
 #Crt.sh
 print "Certsh"
-python $tooldir/CertificateTransparencyLogs/certsh.py -d $1 | tee -a domains.txt
+python "$TOOLDIR/CertificateTransparencyLogs/certsh.py" -d "$1" | tee -a "$LOGDIR/domains.txt"
 check "Certsh"
 
 #Github-Search
 print "Github-subdomains.py"
-python3 $tooldir/github-search/github-subdomains.py -d $1 -t $githubToken | tee -a domains.txt
+python3 "$TOOLDIR/github-search/github-subdomains.py" -d "$1" -t $"githubToken" | tee -a "$LOGDIR/domains.txt"
 check "Github-subdomains.py"
 
 #Gobuster
-# TODO remove and use FFUF instead!
 print "Gobuster DNS"
-gobuster dns -d $1 -w $DNS_WORD_LIST -t $gobusterDNSThreads -o gobusterDomains.txt
+gobuster dns -d "$1" -w "$DNS_WORD_LIST" -t "$gobusterDNSThreads" -o "$LOGDIR/gobusterDomains.txt"
 check "Gobuster DNS"
-sed 's/Found: //g' gobusterDomains.txt >>domains.txt
-rm gobusterDomains.txt
+sed 's/Found: //g' "$LOGDIR/gobusterDomains.txt" >> "$LOGDIR/domains.txt"
+rm "$LOGDIR/gobusterDomains.txt"
 
 # Assetfinder
 print "Assetfinder"
-assetfinder --subs-only $1 | tee -a domains.txt
+assetfinder --subs-only "$1" | tee -a "$LOGDIR/domains.txt"
 check "Assetfinder"
 
 # Subjack
 print "Subjack for search subdomains takeover"
-subjack -w domains.txt -t $subjackThreads -timeout $subjackTime -ssl -c $tooldir/subjack/fingerprints.json -v 3
+subjack -w "$LOGDIR/domains.txt" -t "$subjackThreads" -timeout "$subjackTime" -ssl -c "$TOOLDIR/subjack/fingerprints.json" -v 3
 check "Subjack"
 
 #Removing duplicate entries
-
-sort -u domains.txt -o domains.txt
+sort -u "$LOGDIR/domains.txt" -o "$LOGDIR/domains.txt"
 
 #Discovering alive domains
 echo -e ""
 print " Checking for alive domains.."
-cat domains.txt | httprobe | tee -a alive.txt
+cat "$LOGDIR/domains.txt" | httprobe -c 50 -t 3000 | tee -a "$LOGDIR/alive.txt"
 check "Alive domains with HTTProbe"
 
-sort alive.txt | uniq -u
+sort "$LOGDIR/alive.txt" | uniq -u
 
 #Corsy
 echo -e ""
 print "Corsy to find CORS missconfigurations"
-python3 $tooldir/Corsy/corsy.py -i alive.txt -o CORS.txt
+python3 "$TOOLDIR/Corsy/corsy.py" -i "$LOGDIR/alive.txt" -o "$LOGDIR/CORS.txt"
 check "Corsy"
 
 #Aquatone
-echo -e ""
-echo -e "${BOLD}${GREEN}[+] Starting Aquatone to take screenshots"
+# Already runs in lazyrecon, disable for now until integrated
+#echo -e ""
+#echo -e "${BOLD}${GREEN}[+] Starting Aquatone to take screenshots"
 
-mkdir -p screenshots
-check "mkdir screenshots"
+#mkdir -p "$LOGDIR/screenshots"
+#check "mkdir screenshots"
 
-# TODO remove? Change to static out folder?
-CUR_DIR=$(pwd)
-
-cat alive.txt | aquatone -screenshot-timeout $aquatoneTimeout -out screenshots/
-check "Aquatone"
+#cat "$LOGDIR/alive.txt" | aquatone -screenshot-timeout "$aquatoneTimeout" -out "$LOGDIR/screenshots/"
+#check "Aquatone"
 
 #Parse data jo JSON
 
 print "Finding alive domains"
-cat alive.txt | python -c "import sys; import json; print (json.dumps({'domains':list(sys.stdin)}))" >alive.json
+cat "$LOGDIR/alive.txt" | python -c "import sys; import json; print (json.dumps({'domains':list(sys.stdin)}))" > "$LOGDIR/alive.json"
 check "Alive domains"
 
 print "Get all domains"
-cat domains.txt | python -c "import sys; import json; print (json.dumps({'domains':list(sys.stdin)}))" >domains.json
+cat "$LOGDIR/domains.txt" | python -c "import sys; import json; print (json.dumps({'domains':list(sys.stdin)}))" > "$LOGDIR/domains.json"
 check "All domains"
 
 #########SUBDOMAIN HEADERS#########
@@ -172,142 +188,86 @@ echo -e ""
 echo -e "${BOLD}${GREEN}[+] STEP 2: Storing subdomain headers and response bodies"
 
 print "mkdir headers"
-mkdir -p headers
+mkdir -p "$LOGDIR/headers"
 check "mkdir headers"
 
-# TODO remove? Change to static out folder?
-CURRENT_PATH=$(pwd)
-
 print "Gather headers and responses"
-ERR=0
-for x in $(cat alive.txt); do
-  NAME=$(echo $x | awk -F/ '{print $3}')
-  curl -X GET -H "X-Forwarded-For: h4x.fun" $x -I >"$CURRENT_PATH/headers/$NAME"
-  curl -s -X GET -H "X-Forwarded-For: h4x.fun" -L $x >"$CURRENT_PATH/responsebody/$NAME"
-  # If not responsive, log domain name and increase counter
-  if [[ $? != 0 ]]; then
-    echo -n "$x\n" >> $LOGDIR/unresponsive.txt
-    ((err+=1))
-  fi
-done
+# Extract headers and bodies of all endpoints
+# extractHeadBody
+# TODO DEBUG
+touch "$LOGDIR/unresponsive.txt"
+interlace -tL "$LOGDIR/alive.txt" -threads 50 -cL "bash -c '$TOOLDIR/RR/support/extractHeadBody.sh _target_ $LOGDIR'"
 
 # log errors for the above command
-if [[ $ERR -ge 1 ]]; then
-  -1
-  check "\#$ERR endpoints did not return a response"
+if [ ! -s "$LOGDIR/unresponsive.txt" ]; then
   printW "Unresponsive endpoints can be found in $LOGDIR/unresponsive.txt!"
 fi
-
 
 #########JAVASCRIPT FILES#########
 echo -e ""
 echo -e "${BOLD}${GREEN}[+] STEP 3: Collecting JavaScript files and Hidden Endpoints"
 
 print "Making scripts directory"
-mkdir -p scripts
+mkdir -p "$LOGDIR/scripts"
 
 print "Making scriptsresponse directory"
-mkdir -p scriptsresponse
+mkdir -p "$LOGDIR/scriptsresponse"
 
 print "Making responsebody directory"
-mkdir -p responsebody
+mkdir -p "$LOGDIR/responsebody"
 
-CUR_PATH=$(pwd)
+# TODO DEBUG
+# get all responses of script data
+# getResponses.sh
+ls "$LOGDIR/scriptsresponse" > "$LOGDIR/tmp/files.txt"
+interlace -tL "$LOGDIR/tmp/files.txt" -c "bash -c '$TOOLDIR/RR/support/getResponses.sh _target__ $LOGDIR'"
 
-# TODO Figure this out and remove/improve formatting
-
-for x in $(ls "$CUR_PATH/responsebody"); do
-  printf "\n\n${RED}$x${RESET}\n\n"
-  END_POINTS=$(cat "$CUR_PATH/responsebody/$x" | grep -Eoi "src=\"[^>]+></script>" | cut -d '"' -f 2)
-  for end_point in $END_POINTS; do
-    len=$(echo $end_point | grep "http" | wc -c)
-    mkdir "scriptsresponse/$x/"
-    URL=$end_point
-    if [ $len == 0 ]; then
-      URL="https://$x$end_point"
-    fi
-    file=$(basename $end_point)
-    curl -X GET $URL -L >"scriptsresponse/$x/$file"
-    echo $URL >>"scripts/$x"
-  done
-done
-
-CUR_DIR=$(pwd)
-
-for domain in $(ls scriptsresponse); do
-  #looping through files in each domain
-  mkdir -p endpoints/$domain
-  for file in $(ls scriptsresponse/$domain); do
-    ruby $tooldir/relative-url-extractor/extract.rb scriptsresponse/$domain/$file >>endpoints/$domain/$file
-
-    if [ ! -s endpoints/$domain/$file ]; then
-      rm endpoints/$domain/$file
-    fi
-  done
-done
+# TODO DEBUG!
+# getURL
+ls "$LOGDIR/scriptsresponse" > "$LOGDIR/tmp/files2.txt"
+interlace -tL "$LOGDIR/tmp/files2.txt" -c "bash -c '$TOOLDIR/RR/support/getURL.sh _target_ $LOGDIR $TOOLDIR/relative-url-extractor/extract.rb /scriptsresponse/_target_ /endpoints/_target_'"
 
 print "Jsearch.py"
-organitzationName= sed 's/.com//' <<<"$1"
-print "Making directory javascript"
-mkdir -p javascript
+organitzationName=$(echo "$domain" | awk -F '.' '{ print $1 }')
+print "Making directory for javascript"
+JSFOLDER="$LOGDIR/javascript"
+mkdir -p "$JSFOLDER"
 
-for domain in $(cat alive.txt); do
-  NAME=$(echo $domain | awk -F/ '{print $3}')
-  cd javascript/
-  mkdir -p $NAME
-  print "Searching JS files for $NAME"
-  echo -e ""
-  python3 $tooldir/jsearch/jsearch.py -u $domain -n "$organitzationName" | tee -a $NAME.txt
-
-  if [ -z "$(ls -A $NAME/)" ]; then
-    rmdir $NAME
-    printW "No JS files for domain $domain"
-  fi
-
-  if [ ! -s $NAME.txt ]; then
-    rm $NAME.txt
-    printE "0 JS files found for domain $domain"
-  fi
-
-  # TODO WTF? Remove and rather cd to correct dir
-  cd ..
-done
+# TODO DEBUG!
+# getJS
+interlace -tL "$LOGDIR/alive.txt" -c "bash -c '$TOOLDIR/RR/support/getJS.sh _target_ $TOOLDIR/jsearch/jsearch.py $organitzationName $JSFOLDER'"
 
 #########FILES AND DIRECTORIES#########
-# Todo change to ffuf
 echo -e ""
-echo -e "${BOLD}${GREEN}[+] STEP 4: Starting Gobuster to find directories and hidden files"
+echo -e "${BOLD}${GREEN}[+] STEP 4: Starting FFUF to find directories and hidden files"
 
-mkdir -p directories
+# Make a new logdir for ffuf results
+mkdir -p "$LOGDIR/ffuf"
 
-for domain in $(cat alive.txt); do
-  NAME=$(echo $domain | awk -F/ '{print $3}')
-  gobuster dir -u $domain -w $DIR_WORD_LIST -t $gobusterDirThreads -o directories/$NAME
+# FFUF Directory scan
+# ffufDir
+interlace -tL "$LOGDIR/alive.txt" -c "bash -c '$TOOLDIR/RR/support/ffufDir.sh _target_ $DIR_WORD_LIST $FFUF_Threads $LOGDIR'"
 
-  if [ ! -s directories/$NAME ]; then
-    rm directories/$NAME
-    printW "No valid paths found for domain $domain"
-  fi
-done
+# FFUF File extension scan
+# TODO
 
 #########NMAP#########
 echo -e ""
 echo -e "${BOLD}${GREEN}[+]STEP 5: Starting NMAP Scan for alive domains"
 
-mkdir -p nmap
+mkdir -p "$LOGDIR/nmap"
 
 # nmap all hosts
-for domain in $(cat domains.txt); do
-  nmap -sS -p- -T3 $domain -oG $LOGDIR/nmap/tmp/$domain.res
-  # Only extracts open ports for further scanning, newline separated
-  OPEN_PORTS=$(awk -F ":" '/open/{print $3}' $LOGDIR/nmap/tmp/$domain.res | grep -E -o "([0-9]{2,4})/open" | awk -F '/' '{print $1}')
-  # get open ports as csv
-  OPEN_PORTS_CSV=$(echo $OPEN_PORTS | tr '\n' ',')
-  # in depth nmap of open ports only
-  nmap -sC -sV -o -T2 -p $OPEN_PORTS_CSV -o $LOGDIR/nmap/$domain.res
-done
+# nmapHost
+# TODO DEBUG
+interlace -tL "$LOGDIR/domains.txt" -c "bash -c '$TOOLDIR/RR/support/nmapHost.sh _target_ $LOGDIR'"
 print "NMAP done!"
 
-print "Remove temporary directory NMAP"
-rm -rf $LOGDIR/nmap/tmp/
-check "Remove temporary directory NMAP"
+print "Remove temporary directory"
+rm -rf "$LOGDIR/tmp"
+check "Remove temporary directory"
+
+########################################
+
+# Send over to LazyRecon for further processing
+"$TOOLDIR/lazyrecon/lazyrecon.sh $domain"
