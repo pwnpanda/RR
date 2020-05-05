@@ -21,11 +21,13 @@ fi
 # Check that there is a domain supplied
 if [ $# -eq 0 ]
   then
-    echo "No arguments supplied, please supply a domain!"
+    echo "No arguments supplied, please supply a domain and optionally the base directory for results!"
     exit
 fi
 # Domain is given
-domain=$1
+domain="$1"
+
+
 # today
 todate=$(date +"%Y-%m-%d")
 ########################################
@@ -33,9 +35,7 @@ todate=$(date +"%Y-%m-%d")
 # Customizations
 FFUF_Threads=50
 #----------------------
-domain=
-#----------------------
-TOOLDIR=/root/Bug_Bounty/tools
+TOOLDIR="/root/Bug_Bounty/tools"
 LOGDIR="/root/Bug_Bounty/logs/$domain/$todate"
 RESDIR="/root/Bug_Bounty/reports/$domain/$todate"
 gobusterDNSThreads=50
@@ -43,12 +43,16 @@ gobusterDNSThreads=50
 # Add go binaries
 PATH=$PATH:/root/go/bin
 #----------------------
+# If argumetn is provided, set LOGDIR = $2
+if [ "$2" ]; then
+    LOGDIR=$2
+fi
 
 #################################################
 # MagicRecon
 #----------------------
-# TODO Remember to input your own token here
-githubToken=YOUR GITHUB TOKEN
+# 
+githubToken=$(cat /root/Bug_Bounty/tools/github_token.txt)
 #----------------------
 subjackThreads=100
 subjackTime=30
@@ -102,13 +106,17 @@ check() {
 clear
 
 echo -e "
-__________        ___.    .__       /\         __________
-\______   \  ____ \_ |__  |__|  ____)/  ______ \______   \  ____   ____   ____    ____
- |       _/ /  _ \ | __ \ |  | /    \  /  ___/  |       _/_/ __ \_/ ___\ /  _ \  /    \\
- |    |   \(  <_> )| \_\ \|  ||   |  \ \___ \   |    |   \\  ___/\  \___(  <_> )|   |  \\
- |____|_  / \____/ |___  /|__||___|  //____  >  |____|_  / \___  >\___  >\____/ |___|  /
-        \/             \/          \/      \/          \/      \/     \/             \/
+__________        ___.    .__       /\\         __________
+\______   \\  ____ \\_ |__  |__|  ____)/  ______ \\______   \\  ____   ____   ____    ____
+ |       _/ /  _ \\ | __ \\ |  | /    \\  /  ___/  |       _/_/ __ \\_/ ___\\ /  _ \\  /    \\
+ |    |   \\(  <_> )| \\_\\ \\|  ||   |  \\ \\___ \\   |    |   \\  ___/\\  \\___(  <_> )|   |  \\
+ |____|_  / \\____/ |___  /|__||___|  //____  >  |____|_  / \\___  >\\___  >\\____/ |___|  /
+        \\/             \\/          \\/      \\/          \\/      \\/     \\/             \\/
 \n\n" | lolcat
+
+echo -e "!################################!\n\n" | lolcat
+echo -e "Target is $1" | lolcat
+echo -e "!################################!\n\n" | lolcat
 
 echo -e ""
 echo -e "${BOLD}${GREEN}[+] STEP 1: Starting Subdomain Enumeration"
@@ -266,6 +274,10 @@ print "NMAP done!"
 print "Remove temporary directory"
 rm -rf "$LOGDIR/tmp"
 check "Remove temporary directory"
+
+print "Move results to output folder"
+cp -R "$LOGDIR" "$RESDIR"
+check "Move results to output folder"
 
 ########################################
 
