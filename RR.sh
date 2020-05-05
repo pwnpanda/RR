@@ -105,8 +105,8 @@ check() {
   fi
 
   # Debugging
-  #echo -e "\n"
-  #read -p "Press enter to continue"
+  echo -e "\n"
+  read -p "Press enter to continue"
 }
 ####################################
 
@@ -216,7 +216,6 @@ check "mkdir headers"
 print "Gather headers and responses"
 # Extract headers and bodies of all endpoints
 # extractHeadBody
-# TODO DEBUG
 touch "$LOGDIR/unresponsive.txt"
 interlace --silent -tL "$LOGDIR/alive.txt" -threads 50 -c "bash -c '$TOOLDIR/RR/support/extractHeadBody.sh _target_ $LOGDIR'"
 
@@ -238,17 +237,15 @@ mkdir -p "$LOGDIR/scriptsresponse"
 print "Making responsebody directory"
 mkdir -p "$LOGDIR/responsebody"
 
-# TODO DEBUG
 # get all responses of script data
 # getResponses.sh
-mkdir -p "$LOGDIR/tmp
+mkdir -p "$LOGDIR/tmp"
 ls "$LOGDIR/scriptsresponse" > "$LOGDIR/tmp/files.txt"
-interlace --silent -tL "$LOGDIR/tmp/files.txt" -c "bash -c '$TOOLDIR/RR/support/getResponses.sh _target__ $LOGDIR'"
+interlace --silent -tL "$LOGDIR/tmp/files.txt" -threads 50 -c "bash -c '$TOOLDIR/RR/support/getResponses.sh _target_ $LOGDIR'"
 
-# TODO DEBUG!
 # getURL
 ls "$LOGDIR/scriptsresponse" > "$LOGDIR/tmp/files2.txt"
-interlace --silent -tL "$LOGDIR/tmp/files2.txt" -c "bash -c '$TOOLDIR/RR/support/getURL.sh _target_ $LOGDIR $TOOLDIR/relative-url-extractor/extract.rb /scriptsresponse/_target_ /endpoints/_target_'"
+interlace --silent -tL "$LOGDIR/tmp/files2.txt" -threads 50 -c "bash -c '$TOOLDIR/RR/support/getURL.sh _target_ $LOGDIR $TOOLDIR/relative-url-extractor/extract.rb /scriptsresponse/_target_ /endpoints/_target_'"
 
 print "Jsearch.py"
 organitzationName=$(echo "$domain" | awk -F '.' '{ print $1 }')
@@ -256,9 +253,8 @@ print "Making directory for javascript"
 JSFOLDER="$LOGDIR/javascript"
 mkdir -p "$JSFOLDER"
 
-# TODO DEBUG!
 # getJS
-interlace --silent -tL "$LOGDIR/alive.txt" -c "bash -c '$TOOLDIR/RR/support/getJS.sh _target_ $TOOLDIR/jsearch/jsearch.py $organitzationName $JSFOLDER'"
+interlace --silent -tL "$LOGDIR/alive.txt" -threads 50 -c "bash -c '$TOOLDIR/RR/support/getJS.sh _target_ $TOOLDIR/jsearch/jsearch.py $organitzationName $JSFOLDER'"
 
 #########FILES AND DIRECTORIES#########
 echo -e ""
@@ -269,7 +265,7 @@ mkdir -p "$LOGDIR/ffuf"
 
 # FFUF Directory scan
 # ffufDir
-interlace --silent -tL "$LOGDIR/alive.txt" -c "bash -c '$TOOLDIR/RR/support/ffufDir.sh _target_ $DIR_WORD_LIST $FFUF_Threads $LOGDIR'"
+interlace --silent -tL "$LOGDIR/alive.txt" -threads 50 -c "bash -c '$TOOLDIR/RR/support/ffufDir.sh _target_ $DIR_WORD_LIST $FFUF_Threads $LOGDIR'"
 
 # FFUF File extens --silention scan
 # TODO dev
@@ -282,8 +278,7 @@ mkdir -p "$LOGDIR/nmap"
 
 # nmap all hosts
 # nmapHost
-# TODO DEBUG
-interlace --silent -tL "$LOGDIR/domains.txt" -c "bash -c '$TOOLDIR/RR/support/nmapHost.sh _target_ $LOGDIR'"
+interlace --silent -tL "$LOGDIR/domains.txt" -threads 50 -c "bash -c '$TOOLDIR/RR/support/nmapHost.sh _target_ $LOGDIR'"
 print "NMAP done!"
 
 print "Remove temporary directory"
@@ -297,5 +292,5 @@ check "Move results to output folder"
 ########################################
 
 # Send over to LazyRecon for further processing
-"$TOOLDIR/lazyrecon/lazyrecon.sh" "$domain"
+bash -c '"$TOOLDIR/lazyrecon/lazyrecon.sh" "$domain"'
 
