@@ -37,7 +37,6 @@ domain=
 #----------------------
 TOOLDIR=/root/Bug_Bounty/tools
 LOGDIR="/root/Bug_Bounty/logs/$domain/$todate"
-# TODO rename to git dir
 RESDIR="/root/Bug_Bounty/reports/$domain/$todate"
 gobusterDNSThreads=50
 #----------------------
@@ -48,11 +47,12 @@ PATH=$PATH:/root/go/bin
 #################################################
 # MagicRecon
 #----------------------
+# TODO Remember to input your own token here
 githubToken=YOUR GITHUB TOKEN
 #----------------------
 subjackThreads=100
 subjackTime=30
-aquatoneTimeout=50000
+#aquatoneTimeout=50000
 #----------------------
 #Paths
 DNS_WORD_LIST=$TOOLDIR/SecLists/Discovery/DNS/namelist.txt
