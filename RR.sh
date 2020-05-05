@@ -99,6 +99,16 @@ check() {
   else
     printE " - [$((CMD += 1))] $1 encountered an error"
   fi
+
+  # Debugging
+  echo -e "\n"
+  echo "Press any key to continue"
+  while [ true ] ; do
+      read -t 3 -n 1
+      if [ $? = 0 ] ; then
+          exit ;
+      fi
+  done;
 }
 ####################################
 
