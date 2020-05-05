@@ -59,15 +59,19 @@ subjackTime=30
 #aquatoneTimeout=50000
 #----------------------
 #Paths
-DNS_WORD_LIST=$TOOLDIR/SecLists/Discovery/DNS/namelist.txt
-DIR_WORD_LIST=$TOOLDIR/SecLists/Discovery/Web-Content/raft-medium-files-directories.txt
+DNS_WORD_LIST=$TOOLDIR/wordlists/SecLists/Discovery/DNS/namelist.txt
+DIR_WORD_LIST=$TOOLDIR/wordlists/SecLists/Discovery/Web-Content/raft-medium-files-directories.txt
 #----------------------
 
 #COLORS
-BOLD="\e[1m"
+BOLD=$(tput bold)
 RED=$(tput setaf 1)
 GREEN=$(tput setaf 2)
 YELLOW=$(tput setaf 3)
+BLUE=$(tput setaf 4)
+PURPLE=$(tput setaf 5)
+TURQ=$(tput setaf 6)
+RESET=$(tput sgr0)
 
 ########################################
 # Happy Hunting
@@ -78,37 +82,31 @@ YELLOW=$(tput setaf 3)
 ########################################
 # Print success
 print() {
-  echo -e "${BOLD}${GREEN}[+] $1"
+  echo -e "${BOLD}${GREEN}[+] $1 ${RESET}"
 }
 
 # Print warning
 printW() {
-  echo -e "${BOLD}${YELLOW}[?] $1"
+  echo -e "${BOLD}${YELLOW}[?] $1 ${RESET}"
 }
 
 # Print error
 printE() {
-  echo -e "${BOLD}${RED}[!] $1"
+  echo -e "${BOLD}${RED}[!] $1 ${RESET}"
 }
 
 # Command counter
 CMD=0
 check() {
   if [[ $? == 0 ]]; then
-    print " - [$((CMD += 1))] $1 executed successfully"
+    print "[$((CMD += 1))]${TURQ} $1 executed successfully!"
   else
-    printE " - [$((CMD += 1))] $1 encountered an error"
+    printE "[$((CMD += 1))] $1 encountered an error!"
   fi
 
   # Debugging
-  echo -e "\n"
-  echo "Press any key to continue"
-  while [ true ] ; do
-      read -t 3 -n 1
-      if [ $? = 0 ] ; then
-          exit ;
-      fi
-  done;
+  #echo -e "\n"
+  #read -p "Press enter to continue"
 }
 ####################################
 
@@ -124,12 +122,18 @@ __________        ___.    .__       /\\         __________
         \\/             \\/          \\/      \\/          \\/      \\/     \\/             \\/
 \n\n" | lolcat
 
-echo -e "!################################!\n\n" | lolcat
-echo -e "Target is $1" | lolcat
+echo -e "\n!################################!" | lolcat
+echo -e "#### Target is $1  ####" | lolcat
 echo -e "!################################!\n\n" | lolcat
 
 echo -e ""
 echo -e "${BOLD}${GREEN}[+] STEP 1: Starting Subdomain Enumeration"
+
+# Making directories
+print "Creating directories"
+mkdir -p "$LOGDIR"
+mkdir -p "$RESDIR"
+check "Creating directories"
 
 #Amass
 print "Starting Amass"
@@ -160,7 +164,7 @@ check "Assetfinder"
 
 # Subjack
 print "Subjack for search subdomains takeover"
-subjack -w "$LOGDIR/domains.txt" -t "$subjackThreads" -timeout "$subjackTime" -ssl -c "$TOOLDIR/subjack/fingerprints.json" -v 3
+subjack -w "$LOGDIR/domains.txt" -t "$subjackThreads" -timeout "$subjackTime" -ssl -c "/root/go/src/github.com/haccer/subjack/fingerprints.json" -v 3
 check "Subjack"
 
 #Removing duplicate entries
@@ -214,7 +218,7 @@ print "Gather headers and responses"
 # extractHeadBody
 # TODO DEBUG
 touch "$LOGDIR/unresponsive.txt"
-interlace -tL "$LOGDIR/alive.txt" -threads 50 -cL "bash -c '$TOOLDIR/RR/support/extractHeadBody.sh _target_ $LOGDIR'"
+interlace --silent -tL "$LOGDIR/alive.txt" -threads 50 -c "bash -c '$TOOLDIR/RR/support/extractHeadBody.sh _target_ $LOGDIR'"
 
 # log errors for the above command
 if [ ! -s "$LOGDIR/unresponsive.txt" ]; then
@@ -237,13 +241,14 @@ mkdir -p "$LOGDIR/responsebody"
 # TODO DEBUG
 # get all responses of script data
 # getResponses.sh
+mkdir -p "$LOGDIR/tmp
 ls "$LOGDIR/scriptsresponse" > "$LOGDIR/tmp/files.txt"
-interlace -tL "$LOGDIR/tmp/files.txt" -c "bash -c '$TOOLDIR/RR/support/getResponses.sh _target__ $LOGDIR'"
+interlace --silent -tL "$LOGDIR/tmp/files.txt" -c "bash -c '$TOOLDIR/RR/support/getResponses.sh _target__ $LOGDIR'"
 
 # TODO DEBUG!
 # getURL
 ls "$LOGDIR/scriptsresponse" > "$LOGDIR/tmp/files2.txt"
-interlace -tL "$LOGDIR/tmp/files2.txt" -c "bash -c '$TOOLDIR/RR/support/getURL.sh _target_ $LOGDIR $TOOLDIR/relative-url-extractor/extract.rb /scriptsresponse/_target_ /endpoints/_target_'"
+interlace --silent -tL "$LOGDIR/tmp/files2.txt" -c "bash -c '$TOOLDIR/RR/support/getURL.sh _target_ $LOGDIR $TOOLDIR/relative-url-extractor/extract.rb /scriptsresponse/_target_ /endpoints/_target_'"
 
 print "Jsearch.py"
 organitzationName=$(echo "$domain" | awk -F '.' '{ print $1 }')
@@ -253,7 +258,7 @@ mkdir -p "$JSFOLDER"
 
 # TODO DEBUG!
 # getJS
-interlace -tL "$LOGDIR/alive.txt" -c "bash -c '$TOOLDIR/RR/support/getJS.sh _target_ $TOOLDIR/jsearch/jsearch.py $organitzationName $JSFOLDER'"
+interlace --silent -tL "$LOGDIR/alive.txt" -c "bash -c '$TOOLDIR/RR/support/getJS.sh _target_ $TOOLDIR/jsearch/jsearch.py $organitzationName $JSFOLDER'"
 
 #########FILES AND DIRECTORIES#########
 echo -e ""
@@ -264,10 +269,10 @@ mkdir -p "$LOGDIR/ffuf"
 
 # FFUF Directory scan
 # ffufDir
-interlace -tL "$LOGDIR/alive.txt" -c "bash -c '$TOOLDIR/RR/support/ffufDir.sh _target_ $DIR_WORD_LIST $FFUF_Threads $LOGDIR'"
+interlace --silent -tL "$LOGDIR/alive.txt" -c "bash -c '$TOOLDIR/RR/support/ffufDir.sh _target_ $DIR_WORD_LIST $FFUF_Threads $LOGDIR'"
 
-# FFUF File extension scan
-# TODO
+# FFUF File extens --silention scan
+# TODO dev
 
 #########NMAP#########
 echo -e ""
@@ -278,7 +283,7 @@ mkdir -p "$LOGDIR/nmap"
 # nmap all hosts
 # nmapHost
 # TODO DEBUG
-interlace -tL "$LOGDIR/domains.txt" -c "bash -c '$TOOLDIR/RR/support/nmapHost.sh _target_ $LOGDIR'"
+interlace --silent -tL "$LOGDIR/domains.txt" -c "bash -c '$TOOLDIR/RR/support/nmapHost.sh _target_ $LOGDIR'"
 print "NMAP done!"
 
 print "Remove temporary directory"
@@ -292,4 +297,5 @@ check "Move results to output folder"
 ########################################
 
 # Send over to LazyRecon for further processing
-"$TOOLDIR/lazyrecon/lazyrecon.sh $domain"
+"$TOOLDIR/lazyrecon/lazyrecon.sh" "$domain"
+
