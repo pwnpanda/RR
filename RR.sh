@@ -300,8 +300,6 @@ JS_ENDPOINTS="$SCRIPT_DIR/Extracted_endpoints"
 mkdir -p "$JS_ENDPOINTS"
 check "Create dir for extracted endpoints"
 
-#TODO identify where files are created and why
-
 # Extractor script
 EXTRACTOR="$TOOLDIR/relative-url-extractor/extract.rb"
 # getURL                                         #Basepath   #Folder    #script   #output path
@@ -313,7 +311,13 @@ check "Interlace extract endpoints from within found javascript files"
 
 print "Jsearch.py"
 organitzationName=$(echo "$domain" | awk -F '.' '{ print $domain }')
+# Jsearch creates directory in pwd...so change to tmp dir!
+PRE=$(pwd)
+cd "$LOGDIR/tmp/"
+check "Change pwd to tmp"
+
 print "Making directory for javascript"
+# Dir creation is by absolute path so no worries
 JSEARCH_DIR="$LOGDIR/jsearch"
 mkdir -p "$JSEARCH_DIR"
 
@@ -323,8 +327,9 @@ interlace --silent -tL "$LOGDIR/alive.txt" -threads 50 -c "$COMMAND"
 # Output is all files related to the organization name from the current domain
 # Output is stored in $JSEARCH_DIR/_target_/_target_.txt
 check "Interlace get JS based on organization name from Jsearch"
-
-# TODO somewhere between these two
+# Change back to normal dir because Jsearch is done
+cd "$PRE"
+check "Move back to original directory"
 
 #########FILES AND DIRECTORIES#########
 echo -e ""
@@ -342,7 +347,7 @@ check "Interlace ffuf"
 # Output is found directories
 # Output can be found in $LOGDIR/ffuf/domain.txt
 
-# FFUF File extens --silention scan
+# FFUF File extension scan
 # TODO dev
 
 #########NMAP#########
