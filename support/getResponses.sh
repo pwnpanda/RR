@@ -4,7 +4,7 @@
 # $3 is $SCRIPTS_DATA (output directory for script content)
 # $4 is $SCRIPTS_URL (output directory for urls of scripts
 # shellcheck disable=SC2002
-END_POINTS=$(cat "$2/$1" | grep -Eoi "src=\"[^>]+></script>" | cut -d '"' -f 2)
+END_POINTS=$(cat "$1/$2" | grep -Eoi "src=\"[^>]+></script>" | cut -d '"' -f 2)
 for end_point in $END_POINTS; do
   len=$(echo "$end_point" | grep "http" | wc -c)
   mkdir -p "$3/$2/"

@@ -72,6 +72,7 @@ while getopts ":u:d:l:" o; do
     ;;
   l)
     LOGDIR=${OPTARG}
+    LOGDIR=$LOGDIR/$todate
   ;;
   d)
     DEBUG=
@@ -355,7 +356,7 @@ rm -rf "$LOGDIR/tmp"
 check "Remove temporary directory"
 
 print "Move results to output folder"
-cp -R "$LOGDIR" "$RESDIR"
+cp -R "$LOGDIR/" "$RESDIR"
 check "Move results to output folder"
 
 ########################################
