@@ -141,12 +141,15 @@ __________        ___.    .__       /\\         __________
         \\/             \\/          \\/      \\/          \\/      \\/     \\/             \\/
 \n\n" | lolcat
 
-echo -e "\n!##################################################!" | lolcat
-printf '%-10s %-25s %10s\n' "######" "Target is $domain" "######" | lolcat
-printf '%-10s %-25s %10s\n' "######" "Logdir is" "######" | lolcat
-printf '%-10s %-25s %10s\n' "######" "$LOGDIR" "######" | lolcat
-printf '%-10s %-25s %10s\n' "######" "DEBUG is set to $DEBUG" "######" | lolcat
-echo -e "!##################################################!\n\n" | lolcat
+#87
+#52
+
+printf '%-15s %-57s %15s\n' " " "\n!#######################################################!" " " | lolcat
+printf '%-15s %-8s %-41s %-8s %15s\n' " " "######" "Target is $domain" "######" " " | lolcat
+printf '%-15s %-8s %-41s %-8s %15s\n' " " "######" "Logdir is" "######" " " | lolcat
+printf '%-15s %-8s %-41s %-8s %15s\n' " " "######" "$LOGDIR" "######" " " | lolcat
+printf '%-15s %-8s %-41s %-8s %15s\n' " " "######" "DEBUG is set to $DEBUG" "######" " " | lolcat
+printf '%-15s %-57s %15s\n' " " "!#######################################################!\n\n" " " | lolcat
 
 echo -e ""
 echo -e "${BOLD}${GREEN}[+] STEP 1: Starting Subdomain Enumeration"
