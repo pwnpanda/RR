@@ -147,11 +147,17 @@ if [[ $(echo -n "$LOGDIR" | wc -c) -gt 35 ]]; then
 else
   PRETTY=$LOGDIR
 fi
+if [ -z "$DEBUG" ]; then
+  DEBUGPRINT="ON"
+else
+  DEBUGPRINT="OFF"
+fi
+
 printf '%-10s %-67s %10s\n' " " "!############################################################!" " " | lolcat
 printf '%-15s %-8s %-35s %8s %15s\n' " " "######" "Target is $domain" "######" " " | lolcat
 printf '%-15s %-8s %-35s %8s %15s\n' " " "######" "Logdir is" "######" " " | lolcat
 printf '%-15s %-8s %-35s %8s %15s\n' " " "######" "$PRETTY" "######" " " | lolcat
-printf '%-15s %-8s %-35s %8s %15s\n' " " "######" "DEBUG is set to $DEBUG" "######" " " | lolcat
+printf '%-15s %-8s %-35s %8s %15s\n' " " "######" "DEBUG is set to $DEBUGPRINT" "######" " " | lolcat
 printf '%-10s %-67s %10s\n' " " "!############################################################!" " " | lolcat
 
 echo -e ""
@@ -291,7 +297,7 @@ check "Interlace extract script URLs from web page content and store the script 
 
 ls "$SCRIPT_DATA" > "$LOGDIR/tmp/files2.txt"
 JS_ENDPOINTS="$SCRIPT_DIR/Extracted_endpoints"
-mkdir -p JS_ENDPOINTS
+mkdir -p "$JS_ENDPOINTS"
 check "Create dir for extracted endpoints"
 
 # Extractor script
