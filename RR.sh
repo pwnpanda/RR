@@ -57,7 +57,7 @@ RESET=$(tput sgr0)
 
 usage() {
   echo "No arguments supplied, please supply a domain and optionally the base directory for results!"
-  echo "Usage: ./RR.sh -u <domain> [-l Log Directory] [-d >anything>]"
+  echo "Usage: ./RR.sh -u <domain> [-l Log Directory] [-d <anything>]"
   echo "[LOG Directory] needs to be a valid path"
   echo "[-d] will activate debugging - it needs some input to work!"
   exit 1
@@ -143,10 +143,9 @@ __________        ___.    .__       /\\         __________
 
 echo -e "\n!################################!" | lolcat
 echo -e "#### Target is $domain  ####" | lolcat
+echo -e "#### Logdir is $LOGDIR  ####" | lolcat
+echo -e "#### DEBUG is set to $DEBUG  ####" | lolcat
 echo -e "!################################!\n\n" | lolcat
-
-print "Options set: Domain: $domain - LOGDIR: $LOGDIR - DEBUG: $DEBUG"
-exit 1
 
 echo -e ""
 echo -e "${BOLD}${GREEN}[+] STEP 1: Starting Subdomain Enumeration"
