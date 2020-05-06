@@ -265,7 +265,7 @@ interlace --silent -tL "$LOGDIR/alive.txt" -threads 50 -c "$COMMAND"
 check "Interlace get headers and bodies"
 
 # log errors for the above command
-if [ ! -s "$LOGDIR/unresponsive.txt" ]; then
+if [[ -s "$LOGDIR/unresponsive.txt" ]]; then
   printW "Unresponsive endpoints can be found in $LOGDIR/unresponsive.txt!"
 fi
 

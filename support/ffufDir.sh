@@ -10,7 +10,7 @@ RESET=$(tput sgr0)
 # Get name
 NAME=$(echo "$1" | awk -F/ '{print $3}')
 
-ffuf -u "$1/FUZZ" -recursion -recursion-depth=5 -c -w "$2" -t "$3" -fs 0 -o "$4/$NAME"
+ffuf -u "$1/FUZZ" -recursion -recursion-depth=5 -c -e '/','._','~','_','-','.','0','1','~1','.1','2','.2','.3','.aro','.asp','.aspx','.bac','.backup','.bak','.bat','~bk','.c','.cache','.cfm','.cgi','.com','.conf','.cs','.csproj','.dif','.dist','.dll','.download','.err','.exe','.git','.gpg','.gz','.htm','.html','.inc','.ini','.java','.jhtml','.jnlp','.jsa','.jsp','.jvs','.key','.log','.lst','.map','.mdb','.nsf','.old','.orig','.ovpn','.part','.php','.phtml','.pl','.priv','.reg','.rej','.rsa','s','.sass-cache','.sav','.save','.save.1','.sh','.shtml','.sql','.sublime-project','.sublime-workspace','..swm','..swn','..swo','..swp','.swp','.tar','.tar.gz','.temp','.templ','.tmp','.txt','.un~','.vb','.vbproj','.vi','.wadl','.xml','.zip','.go','.wasm','.rar','' -w "$2" -t "$3" -fs 0 -o "$4/$NAME"
 
 if [ ! -s "$4/$NAME" ]; then
   rm "$4/$NAME"
