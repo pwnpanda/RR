@@ -98,26 +98,26 @@ DIR_WORD_LIST=$TOOLDIR/wordlists/SecLists/Discovery/Web-Content/raft-medium-file
 ########################################
 # Print success
 print() {
-  echo -e "${BOLD}${GREEN}[+] $1 ${RESET}"
+  echo -e "${BOLD}${GREEN}[+] $domain ${RESET}"
 }
 
 # Print warning
 printW() {
-  echo -e "${BOLD}${YELLOW}[?] $1 ${RESET}"
+  echo -e "${BOLD}${YELLOW}[?] $domain ${RESET}"
 }
 
 # Print error
 printE() {
-  echo -e "${BOLD}${RED}[!] $1 ${RESET}"
+  echo -e "${BOLD}${RED}[!] $domain ${RESET}"
 }
 
 # Command counter
 CMD=0
 check() {
   if [[ $? == 0 ]]; then
-    print "[$((CMD += 1))]${TURQ} $1 executed successfully!"
+    print "[$((CMD += 1))]${TURQ} $domain executed successfully!"
   else
-    printE "[$((CMD += 1))] $1 encountered an error!"
+    printE "[$((CMD += 1))] $domain encountered an error!"
   fi
 
   # Debugging
@@ -140,12 +140,16 @@ __________        ___.    .__       /\\         __________
  |____|_  / \\____/ |___  /|__||___|  //____  >  |____|_  / \\___  >\\___  >\\____/ |___|  /
         \\/             \\/          \\/      \\/          \\/      \\/     \\/             \\/
 \n\n" | lolcat
-
-
+if [[ $(echo -n "$LOGDIR" | wc -c) -gt 41 ]]; then
+  PRETTY=$(echo -n "$LOGDIR" | tail -c 38)
+  PRETTY="../$PRETTY"
+else
+  PRETTY=$LOGDIR
+fi
 printf '%-10s %-67s %10s\n' " " "!############################################################!" " " | lolcat
 printf '%-15s %-8s %-41s %-8s %15s\n' " " "######" "Target is $domain" "######" " " | lolcat
 printf '%-15s %-8s %-41s %-8s %15s\n' " " "######" "Logdir is" "######" " " | lolcat
-printf '%-15s %-8s %-41s %-8s %15s\n' " " "######" "$LOGDIR" "######" " " | lolcat
+printf '%-15s %-8s %-41s %-8s %15s\n' " " "######" "$PRETTY" "######" " " | lolcat
 printf '%-15s %-8s %-41s %-8s %15s\n' " " "######" "DEBUG is set to $DEBUG" "######" " " | lolcat
 printf '%-10s %-67s %10s\n' " " "!############################################################!" " " | lolcat
 
@@ -160,29 +164,29 @@ check "Creating directories"
 
 #Amass
 print "Starting Amass"
-amass enum -norecursive -noalts -d "$1" -o "$LOGDIR/domains.txt"
+amass enum -norecursive -noalts -d "$domain" -o "$LOGDIR/domains.txt"
 check "Amass"
 
 #Crt.sh
 print "Certsh"
-python "$TOOLDIR/CertificateTransparencyLogs/certsh.py" -d "$1" | tee -a "$LOGDIR/domains.txt"
+python "$TOOLDIR/CertificateTransparencyLogs/certsh.py" -d "$domain" | tee -a "$LOGDIR/domains.txt"
 check "Certsh"
 
 #Github-Search
 print "Github-subdomains.py"
-python3 "$TOOLDIR/github-search/github-subdomains.py" -d "$1" -t "$githubToken" | tee -a "$LOGDIR/domains.txt"
+python3 "$TOOLDIR/github-search/github-subdomains.py" -d "$domain" -t "$githubToken" | tee -a "$LOGDIR/domains.txt"
 check "Github-subdomains.py"
 
 #Gobuster
 print "Gobuster DNS"
-gobuster dns -d "$1" -w "$DNS_WORD_LIST" -t "$gobusterDNSThreads" -o "$LOGDIR/gobusterDomains.txt"
+gobuster dns -d "$domain" -w "$DNS_WORD_LIST" -t "$gobusterDNSThreads" -o "$LOGDIR/gobusterDomains.txt"
 check "Gobuster DNS"
 sed 's/Found: //g' "$LOGDIR/gobusterDomains.txt" >> "$LOGDIR/domains.txt"
 rm "$LOGDIR/gobusterDomains.txt"
 
 # Assetfinder
 print "Assetfinder"
-assetfinder --subs-only "$1" | tee -a "$LOGDIR/domains.txt"
+assetfinder --subs-only "$domain" | tee -a "$LOGDIR/domains.txt"
 check "Assetfinder"
 
 # Subjack
@@ -299,7 +303,7 @@ interlace --silent -tL "$LOGDIR/tmp/files2.txt" -threads 50 -c "$COMMAND"
 check "Interlace extract endpoints from within found javascript files"
 
 print "Jsearch.py"
-organitzationName=$(echo "$domain" | awk -F '.' '{ print $1 }')
+organitzationName=$(echo "$domain" | awk -F '.' '{ print $domain }')
 print "Making directory for javascript"
 JSEARCH_DIR="$LOGDIR/jsearch"
 mkdir -p "$JSEARCH_DIR"
