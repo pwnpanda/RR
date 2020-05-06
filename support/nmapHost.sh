@@ -1,5 +1,6 @@
 #!/bin/bash
-# $1 is target  $2 is log directory
+# $1 is target
+# $2 is log directory
 nmap -sS -p- -T3 "$1" -oG "$2/tmp/$1.res"
 # Only extracts open ports for further scanning, newline separated
 OPEN_PORTS=$(awk -F ":" '/open/{print $3}' "$2/tmp/$1.res" | grep -E -o "([0-9]{2,4})/open" | awk -F '/' '{print $2}')

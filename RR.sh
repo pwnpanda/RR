@@ -18,16 +18,6 @@ fi
 
 ########################################
 
-# Check that there is a domain supplied
-if [ $# -eq 0 ]
-  then
-    echo "No arguments supplied, please supply a domain and optionally the base directory for results!"
-    exit
-fi
-# Domain is given
-domain="$1"
-
-
 # today
 todate=$(date +"%Y-%m-%d")
 ########################################
@@ -39,14 +29,12 @@ TOOLDIR="/root/Bug_Bounty/tools"
 LOGDIR="/root/Bug_Bounty/logs/$domain/$todate"
 RESDIR="/root/Bug_Bounty/reports/$domain/$todate"
 gobusterDNSThreads=50
+domain=
+DEBUG=0
 #----------------------
 # Add go binaries
 PATH=$PATH:/root/go/bin
 #----------------------
-# If argumetn is provided, set LOGDIR = $2
-if [ "$2" ]; then
-    LOGDIR=$2
-fi
 
 #################################################
 # MagicRecon
@@ -72,6 +60,37 @@ BLUE=$(tput setaf 4)
 PURPLE=$(tput setaf 5)
 TURQ=$(tput setaf 6)
 RESET=$(tput sgr0)
+
+#------------------------------------------------------
+
+usage() {
+  echo "No arguments supplied, please supply a domain and optionally the base directory for results!"
+  echo "Usage: ./RR.sh -u <domain> [-l Log Directory] [-d]"
+  echo "[LOG Directory] needs to be a valid path"
+  echo "[-d] will activate debugging"
+  exit 1
+}
+
+# Check that there is a domain supplied
+while getopts ":u:d:l:" o; do
+  case "${o}" in
+  u)
+    domain=${OPTARG}
+    echo $domain
+    ;;
+  l)
+    LOGDIR=${OPTARG}
+    echo $LOGDIR
+  ;;
+  d)
+    DEBUG=1
+    echo $DEBUG
+  ;;
+  *)
+    usage
+    ;;
+  esac
+done
 
 ########################################
 # Happy Hunting
@@ -105,8 +124,11 @@ check() {
   fi
 
   # Debugging
-  echo -e "\n"
-  read -p "Press enter to continue"
+  if [ -z "$DEBUG" ];
+  then
+    echo -e "\n"
+    read -p "Press enter to continue"
+  fi
 }
 ####################################
 
@@ -123,8 +145,10 @@ __________        ___.    .__       /\\         __________
 \n\n" | lolcat
 
 echo -e "\n!################################!" | lolcat
-echo -e "#### Target is $1  ####" | lolcat
+echo -e "#### Target is $domain  ####" | lolcat
 echo -e "!################################!\n\n" | lolcat
+
+print "Options set: Domain: $DOMAIN - LOGDIR: $LOGDIR - DEBUG: $DEBUG"
 
 echo -e ""
 echo -e "${BOLD}${GREEN}[+] STEP 1: Starting Subdomain Enumeration"
@@ -147,7 +171,7 @@ check "Certsh"
 
 #Github-Search
 print "Github-subdomains.py"
-python3 "$TOOLDIR/github-search/github-subdomains.py" -d "$1" -t $"githubToken" | tee -a "$LOGDIR/domains.txt"
+python3 "$TOOLDIR/github-search/github-subdomains.py" -d "$1" -t "$githubToken" | tee -a "$LOGDIR/domains.txt"
 check "Github-subdomains.py"
 
 #Gobuster
@@ -173,6 +197,7 @@ sort -u "$LOGDIR/domains.txt" -o "$LOGDIR/domains.txt"
 #Discovering alive domains
 echo -e ""
 print " Checking for alive domains.."
+# shellcheck disable=SC2002
 cat "$LOGDIR/domains.txt" | httprobe -c 50 -t 3000 | tee -a "$LOGDIR/alive.txt"
 check "Alive domains with HTTProbe"
 
@@ -198,26 +223,36 @@ check "Corsy"
 #Parse data jo JSON
 
 print "Finding alive domains"
+# shellcheck disable=SC2002
 cat "$LOGDIR/alive.txt" | python -c "import sys; import json; print (json.dumps({'domains':list(sys.stdin)}))" > "$LOGDIR/alive.json"
 check "Alive domains"
 
 print "Get all domains"
+# shellcheck disable=SC2002
 cat "$LOGDIR/domains.txt" | python -c "import sys; import json; print (json.dumps({'domains':list(sys.stdin)}))" > "$LOGDIR/domains.json"
 check "All domains"
 
 #########SUBDOMAIN HEADERS#########
 echo -e ""
-echo -e "${BOLD}${GREEN}[+] STEP 2: Storing subdomain headers and response bodies"
+echo -e "${BOLD}${GREEN}[+] STEP 2: Storing subdomain website_data (headers and body)"
 
-print "mkdir headers"
-mkdir -p "$LOGDIR/headers"
-check "mkdir headers"
+WEBSITE_DATA="$LOGDIR/website_data"
+print "mkdir website_data for headers & response bodies"
+HEADERS="$WEBSITE_DATA/header" #headers from web page
+mkdir -p "$HEADERS"
+BODIES="$WEBSITE_DATA/body" # content of web page
+mkdir -p "$BODIES"
+check "mkdir website_data"
 
-print "Gather headers and responses"
-# Extract headers and bodies of all endpoints
-# extractHeadBody
+print "Gather website_data and responses"
+# Extract website_data and bodies of all endpoints
 touch "$LOGDIR/unresponsive.txt"
-interlace --silent -tL "$LOGDIR/alive.txt" -threads 50 -c "bash -c '$TOOLDIR/RR/support/extractHeadBody.sh _target_ $LOGDIR'"
+# extractHeadBody                                         #URL    #Output base folder
+COMMAND="bash -c '$TOOLDIR/RR/support/extractHeadBody.sh _target_ $WEBSITE_DATA'"
+interlace --silent -tL "$LOGDIR/alive.txt" -threads 50 -c "$COMMAND"
+# Output is headers and data from each web page
+# Output goes to $HEADERS and $BODIES
+check "Interlace get headers and bodies"
 
 # log errors for the above command
 if [ ! -s "$LOGDIR/unresponsive.txt" ]; then
@@ -229,43 +264,70 @@ echo -e ""
 echo -e "${BOLD}${GREEN}[+] STEP 3: Collecting JavaScript files and Hidden Endpoints"
 
 print "Making scripts directory"
-mkdir -p "$LOGDIR/scripts"
-
-print "Making scriptsresponse directory"
-mkdir -p "$LOGDIR/scriptsresponse"
-
-print "Making responsebody directory"
-mkdir -p "$LOGDIR/responsebody"
+SCRIPT_DIR="$LOGDIR/javascript"
+mkdir -p "$SCRIPT_DIR"
+SCRIPT_URL="$SCRIPT_DIR/URLS"
+mkdir -p "$SCRIPT_URL"
+SCRIPT_DATA="$SCRIPT_DIR/data"
+check "Created JS folders"
 
 # get all responses of script data
-# getResponses.sh
 mkdir -p "$LOGDIR/tmp"
-ls "$LOGDIR/scriptsresponse" > "$LOGDIR/tmp/files.txt"
-interlace --silent -tL "$LOGDIR/tmp/files.txt" -threads 50 -c "bash -c '$TOOLDIR/RR/support/getResponses.sh _target_ $LOGDIR'"
+ls "$BODIES/" > "$LOGDIR/tmp/files.txt"
+check "Get list of files with web page content"
+# getResponses                                      #Base path #Filename #Output data #Output urls
+COMMAND="bash -c '$TOOLDIR/RR/support/getResponses.sh $BODIES _target_ $SCRIPT_DATA $SCRIPT_URL'"
+interlace --silent -tL "$LOGDIR/tmp/files.txt" -threads 50 -c "$COMMAND"
+# Output is the URL for the scripts in $DATA files (web page content) and the actual script
+# Output goes to $SCRIPT_URL and $SCRIPT_DATA
+# $SCRIPT_URL contains a file pr. domain with Script URLS.
+# $SCRIPT_DATA contains subfolders for each domain containing files named after the script with the content inside
+check "Interlace extract script URLs from web page content and store the script contents"
 
-# getURL
-ls "$LOGDIR/scriptsresponse" > "$LOGDIR/tmp/files2.txt"
-interlace --silent -tL "$LOGDIR/tmp/files2.txt" -threads 50 -c "bash -c '$TOOLDIR/RR/support/getURL.sh _target_ $LOGDIR $TOOLDIR/relative-url-extractor/extract.rb /scriptsresponse/_target_ /endpoints/_target_'"
+
+ls "$SCRIPT_DATA" > "$LOGDIR/tmp/files2.txt"
+JS_ENDPOINTS="$SCRIPT_DIR/Extracted_endpoints"
+mkdir -p JS_ENDPOINTS
+check "Create dir for extracted endpoints"
+
+# Extractor script
+EXTRACTOR="$TOOLDIR/relative-url-extractor/extract.rb"
+# getURL                                         #Basepath   #Folder    #script   #output path
+COMMAND="bash -c '$TOOLDIR/RR/support/getURL.sh $SCRIPT_DATA _target_ $EXTRACTOR $JS_ENDPOINTS/_target_'"
+interlace --silent -tL "$LOGDIR/tmp/files2.txt" -threads 50 -c "$COMMAND"
+# Output is all endpoints detected within each JS file for the current domain (folder)
+# Output is stored in $JS_ENDPOINTS/_target_/<name-of-js-file>
+check "Interlace extract endpoints from within found javascript files"
 
 print "Jsearch.py"
 organitzationName=$(echo "$domain" | awk -F '.' '{ print $1 }')
 print "Making directory for javascript"
-JSFOLDER="$LOGDIR/javascript"
-mkdir -p "$JSFOLDER"
+JSEARCH_DIR="$LOGDIR/jsearch"
+mkdir -p "$JSEARCH_DIR"
 
-# getJS
-interlace --silent -tL "$LOGDIR/alive.txt" -threads 50 -c "bash -c '$TOOLDIR/RR/support/getJS.sh _target_ $TOOLDIR/jsearch/jsearch.py $organitzationName $JSFOLDER'"
+# getJS                                        #domain     #Tool                      #Organization     #Output folder
+COMMAND="bash -c '$TOOLDIR/RR/support/getJS.sh _target_ $TOOLDIR/jsearch/jsearch.py $organitzationName $JSEARCH_DIR'"
+interlace --silent -tL "$LOGDIR/alive.txt" -threads 50 -c "$COMMAND"
+# Output is all files related to the organization name from the current domain
+# Output is stored in $JSEARCH_DIR/_target_/_target_.txt
+check "Interlace get JS based on organization name from Jsearch"
+
 
 #########FILES AND DIRECTORIES#########
 echo -e ""
 echo -e "${BOLD}${GREEN}[+] STEP 4: Starting FFUF to find directories and hidden files"
 
 # Make a new logdir for ffuf results
-mkdir -p "$LOGDIR/ffuf"
+FFUF_DIR="$LOGDIR/ffuf"
+mkdir -p "$FFUF_DIR"
 
 # FFUF Directory scan
-# ffufDir
-interlace --silent -tL "$LOGDIR/alive.txt" -threads 50 -c "bash -c '$TOOLDIR/RR/support/ffufDir.sh _target_ $DIR_WORD_LIST $FFUF_Threads $LOGDIR'"
+# ffufDir                                         #domain  #Wordlist      # Threads     #Out dir
+COMMAND="bash -c '$TOOLDIR/RR/support/ffufDir.sh _target_ $DIR_WORD_LIST $FFUF_Threads $FFUF_DIR'"
+interlace --silent -tL "$LOGDIR/alive.txt" -threads 50 -c "$COMMAND"
+check "Interlace ffuf"
+# Output is found directories
+# Output can be found in $LOGDIR/ffuf/domain.txt
 
 # FFUF File extens --silention scan
 # TODO dev
@@ -273,13 +335,17 @@ interlace --silent -tL "$LOGDIR/alive.txt" -threads 50 -c "bash -c '$TOOLDIR/RR/
 #########NMAP#########
 echo -e ""
 echo -e "${BOLD}${GREEN}[+]STEP 5: Starting NMAP Scan for alive domains"
-
-mkdir -p "$LOGDIR/nmap"
+NMAP_DIR="$LOGDIR/nmap"
+mkdir -p "$NMAP_DIR"
 
 # nmap all hosts
-# nmapHost
-interlace --silent -tL "$LOGDIR/domains.txt" -threads 50 -c "bash -c '$TOOLDIR/RR/support/nmapHost.sh _target_ $LOGDIR'"
-print "NMAP done!"
+# nmapHost                                      #target url #Output dir
+COMMAND="bash -c '$TOOLDIR/RR/support/nmapHost.sh _target_ $LOGDIR'"
+interlace --silent -tL "$LOGDIR/domains.txt" -threads 50 -c "$COMMAND"
+# Output is open ports
+# Output can be found in $LOGDIR/nmap/_target_.res
+check "Interlace NMAP scan"
+
 
 print "Remove temporary directory"
 rm -rf "$LOGDIR/tmp"
