@@ -141,12 +141,12 @@ __________        ___.    .__       /\\         __________
         \\/             \\/          \\/      \\/          \\/      \\/     \\/             \\/
 \n\n" | lolcat
 
-echo -e "\n!###############################################################################################!" | lolcat
-echo -e "Target is $domain" | lolcat
-echo -e "Logdir is" | lolcat
-echo -e "$LOGDIR" | lolcat
-echo -e "DEBUG is set to $DEBUG" | lolcat
-echo -e "!###############################################################################################!\n\n" | lolcat
+echo -e "\n!##################################################!" | lolcat
+printf '%-10s %-25s %10s\n' "######" "Target is $domain" "######" | lolcat
+printf '%-10s %-25s %10s\n' "######" "Logdir is" "######" | lolcat
+printf '%-10s %-25s %10s\n' "######" "$LOGDIR" "######" | lolcat
+printf '%-10s %-25s %10s\n' "######" "DEBUG is set to $DEBUG" "######" | lolcat
+echo -e "!##################################################!\n\n" | lolcat
 
 echo -e ""
 echo -e "${BOLD}${GREEN}[+] STEP 1: Starting Subdomain Enumeration"
