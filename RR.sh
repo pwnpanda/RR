@@ -300,6 +300,8 @@ JS_ENDPOINTS="$SCRIPT_DIR/Extracted_endpoints"
 mkdir -p "$JS_ENDPOINTS"
 check "Create dir for extracted endpoints"
 
+#TODO identify where files are created and why
+
 # Extractor script
 EXTRACTOR="$TOOLDIR/relative-url-extractor/extract.rb"
 # getURL                                         #Basepath   #Folder    #script   #output path
@@ -322,6 +324,7 @@ interlace --silent -tL "$LOGDIR/alive.txt" -threads 50 -c "$COMMAND"
 # Output is stored in $JSEARCH_DIR/_target_/_target_.txt
 check "Interlace get JS based on organization name from Jsearch"
 
+# TODO somewhere between these two
 
 #########FILES AND DIRECTORIES#########
 echo -e ""

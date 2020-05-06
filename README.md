@@ -15,4 +15,8 @@ __________        ___.    .__       /\         __________
  - [x] Static definition of output and tool directories at top of script for easy customization
  - [x] Error checks for logging and debugging
  - [x] Optimized for multi-threading where possible using [Interlace](https://github.com/codingo/Interlace)
+ - [ ] Rewrite LazyRecon for Interlace and debugging!
+ - [ ] Add checking for SQLI automatically
+ - [ ] Add checking for request smuggling automatically
+  
  
