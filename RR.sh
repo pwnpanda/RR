@@ -141,16 +141,16 @@ __________        ___.    .__       /\\         __________
         \\/             \\/          \\/      \\/          \\/      \\/     \\/             \\/
 \n\n" | lolcat
 if [[ $(echo -n "$LOGDIR" | wc -c) -gt 35 ]]; then
-  PRETTY=$(echo -n "$LOGDIR" | tail -c 32)
-  PRETTY="../$PRETTY"
+  PRETTY=$(echo -n "$LOGDIR" | tail -c 31)
+  PRETTY="../~$PRETTY"
 else
   PRETTY=$LOGDIR
 fi
 printf '%-10s %-67s %10s\n' " " "!############################################################!" " " | lolcat
-printf '%-15s %-8s %-35s %-8s %15s\n' " " "######" "Target is $domain" "######" " " | lolcat
-printf '%-15s %-8s %-35s %-8s %15s\n' " " "######" "Logdir is" "######" " " | lolcat
-printf '%-15s %-8s %-35s %-8s %15s\n' " " "######" "$PRETTY" "######" " " | lolcat
-printf '%-15s %-8s %-35s %-8s %15s\n' " " "######" "DEBUG is set to $DEBUG" "######" " " | lolcat
+printf '%-15s %-8s %-35s %8s %15s\n' " " "######" "Target is $domain" "######" " " | lolcat
+printf '%-15s %-8s %-35s %8s %15s\n' " " "######" "Logdir is" "######" " " | lolcat
+printf '%-15s %-8s %-35s %8s %15s\n' " " "######" "$PRETTY" "######" " " | lolcat
+printf '%-15s %-8s %-35s %8s %15s\n' " " "######" "DEBUG is set to $DEBUG" "######" " " | lolcat
 printf '%-10s %-67s %10s\n' " " "!############################################################!" " " | lolcat
 
 echo -e ""
