@@ -26,7 +26,7 @@ todate=$(date +"%Y-%m-%d")
 FFUF_Threads=50
 gobusterDNSThreads=50
 domain=
-DEBUG=0
+DEBUG=1
 #----------------------
 # Add go binaries
 PATH=$PATH:/root/go/bin
@@ -74,7 +74,7 @@ while getopts ":u:d:l:" o; do
     LOGDIR=${OPTARG}
   ;;
   d)
-    DEBUG=1
+    DEBUG=0
   ;;
   *)
     usage
@@ -141,11 +141,12 @@ __________        ___.    .__       /\\         __________
         \\/             \\/          \\/      \\/          \\/      \\/     \\/             \\/
 \n\n" | lolcat
 
-echo -e "\n!################################!" | lolcat
-echo -e "#### Target is $domain  ####" | lolcat
-echo -e "#### Logdir is $LOGDIR  ####" | lolcat
-echo -e "#### DEBUG is set to $DEBUG  ####" | lolcat
-echo -e "!################################!\n\n" | lolcat
+echo -e "\n!###############################################################################################!" | lolcat
+echo -e "Target is $domain" | lolcat
+echo -e "Logdir is" | lolcat
+echo -e "$LOGDIR" | lolcat
+echo -e "DEBUG is set to $DEBUG" | lolcat
+echo -e "!###############################################################################################!\n\n" | lolcat
 
 echo -e ""
 echo -e "${BOLD}${GREEN}[+] STEP 1: Starting Subdomain Enumeration"
