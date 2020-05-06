@@ -74,7 +74,7 @@ while getopts ":u:d:l:" o; do
     LOGDIR=${OPTARG}
   ;;
   d)
-    DEBUG=0
+    DEBUG=
   ;;
   *)
     usage
