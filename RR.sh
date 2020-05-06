@@ -64,6 +64,12 @@ usage() {
 }
 
 # Check that there is a domain supplied
+if [ $# -eq 0 ]
+  then
+    usage
+fi
+
+# Check that there is a domain supplied
 while getopts ":u:d:l:" o; do
   case "${o}" in
   u)
@@ -347,8 +353,6 @@ check "Interlace ffuf"
 # Output is found directories
 # Output can be found in $LOGDIR/ffuf/domain.txt
 
-# FFUF File extension scan
-# TODO dev
 
 #########NMAP#########
 echo -e ""
@@ -373,7 +377,11 @@ print "Move results to output folder"
 cp -R "$LOGDIR/" "$RESDIR"
 check "Move results to output folder"
 
+##############Request Smuggling check#######################
+
+
 ########################################
+# LazyRecon
 
 # Send over to LazyRecon for further processing
 bash -c '"$TOOLDIR/lazyrecon/lazyrecon.sh" "$domain"'
