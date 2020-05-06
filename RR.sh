@@ -24,10 +24,6 @@ todate=$(date +"%Y-%m-%d")
 
 # Customizations
 FFUF_Threads=50
-#----------------------
-TOOLDIR="/root/Bug_Bounty/tools"
-LOGDIR="/root/Bug_Bounty/logs/$domain/$todate"
-RESDIR="/root/Bug_Bounty/reports/$domain/$todate"
 gobusterDNSThreads=50
 domain=
 DEBUG=0
@@ -45,10 +41,6 @@ githubToken=$(cat /root/Bug_Bounty/tools/github_token.txt)
 subjackThreads=100
 subjackTime=30
 #aquatoneTimeout=50000
-#----------------------
-#Paths
-DNS_WORD_LIST=$TOOLDIR/wordlists/SecLists/Discovery/DNS/namelist.txt
-DIR_WORD_LIST=$TOOLDIR/wordlists/SecLists/Discovery/Web-Content/raft-medium-files-directories.txt
 #----------------------
 
 #COLORS
@@ -76,21 +68,26 @@ while getopts ":u:d:l:" o; do
   case "${o}" in
   u)
     domain=${OPTARG}
-    echo $domain
+    LOGDIR="/root/Bug_Bounty/logs/$domain/$todate"
     ;;
   l)
     LOGDIR=${OPTARG}
-    echo $LOGDIR
   ;;
   d)
     DEBUG=1
-    echo $DEBUG
   ;;
   *)
     usage
     ;;
   esac
 done
+
+#Paths
+TOOLDIR="/root/Bug_Bounty/tools"
+RESDIR="/root/Bug_Bounty/reports/$domain/$todate"
+DNS_WORD_LIST=$TOOLDIR/wordlists/SecLists/Discovery/DNS/namelist.txt
+DIR_WORD_LIST=$TOOLDIR/wordlists/SecLists/Discovery/Web-Content/raft-medium-files-directories.txt
+#----------------------
 
 ########################################
 # Happy Hunting
