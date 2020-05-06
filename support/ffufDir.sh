@@ -10,7 +10,7 @@ RESET=$(tput sgr0)
 # Get name
 NAME=$(echo "$1" | awk -F/ '{print $3}')
 
-ffuf -u "$1" -recursion -recursion-depth=5 -c -w "$2" -t "$3" -fs 0 -o "$4/$NAME"
+ffuf -u "$1/FUZZ" -recursion -recursion-depth=5 -c -w "$2" -t "$3" -fs 0 -o "$4/$NAME"
 
 if [ ! -s "$4/$NAME" ]; then
   rm "$4/$NAME"
