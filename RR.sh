@@ -148,7 +148,7 @@ echo -e "\n!################################!" | lolcat
 echo -e "#### Target is $domain  ####" | lolcat
 echo -e "!################################!\n\n" | lolcat
 
-print "Options set: Domain: $DOMAIN - LOGDIR: $LOGDIR - DEBUG: $DEBUG"
+print "Options set: Domain: $domain - LOGDIR: $LOGDIR - DEBUG: $DEBUG"
 exit 1
 
 echo -e ""
