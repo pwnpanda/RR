@@ -98,26 +98,26 @@ DIR_WORD_LIST=$TOOLDIR/wordlists/SecLists/Discovery/Web-Content/raft-medium-file
 ########################################
 # Print success
 print() {
-  echo -e "${BOLD}${GREEN}[+] $domain ${RESET}"
+  echo -e "${BOLD}${GREEN}[+] $1 ${RESET}"
 }
 
 # Print warning
 printW() {
-  echo -e "${BOLD}${YELLOW}[?] $domain ${RESET}"
+  echo -e "${BOLD}${YELLOW}[?] $1 ${RESET}"
 }
 
 # Print error
 printE() {
-  echo -e "${BOLD}${RED}[!] $domain ${RESET}"
+  echo -e "${BOLD}${RED}[!] $1 ${RESET}"
 }
 
 # Command counter
 CMD=0
 check() {
   if [[ $? == 0 ]]; then
-    print "[$((CMD += 1))]${TURQ} $domain executed successfully!"
+    print "[$((CMD += 1))]${TURQ} $1 executed successfully!"
   else
-    printE "[$((CMD += 1))] $domain encountered an error!"
+    printE "[$((CMD += 1))] $1 encountered an error!"
   fi
 
   # Debugging
