@@ -15,6 +15,7 @@ __________        ___.    .__       /\         __________
  - [x] Static definition of output and tool directories at top of script for easy customization
  - [x] Error checks for logging and debugging
  - [x] Optimized for multi-threading where possible using [Interlace](https://github.com/codingo/Interlace)
+ - [ ] Add logging to support scripts (use files!)
  - [ ] Rewrite LazyRecon for Interlace and debugging!
  - [ ] Support recursion over subdomains
  - [ ] Move functions from scan.sh to this script for recursiveness
