@@ -94,6 +94,7 @@ TOOLDIR="/root/Bug_Bounty/tools"
 RESDIR="/root/Bug_Bounty/reports/$domain/$todate"
 DNS_WORD_LIST=$TOOLDIR/wordlists/SecLists/Discovery/DNS/namelist.txt
 DIR_WORD_LIST=$TOOLDIR/wordlists/SecLists/Discovery/Web-Content/raft-medium-files-directories.txt
+LOGFILE="$LOGDIR/RR.log"
 #----------------------
 
 ########################################
@@ -105,17 +106,17 @@ DIR_WORD_LIST=$TOOLDIR/wordlists/SecLists/Discovery/Web-Content/raft-medium-file
 ########################################
 # Print success
 print() {
-  echo -e "${BOLD}${GREEN}[+] $1 ${RESET}"
+  echo -e "${BOLD}${GREEN}[+] $1 ${RESET}" | tee -a $LOGFILE
 }
 
 # Print warning
 printW() {
-  echo -e "${BOLD}${YELLOW}[?] $1 ${RESET}"
+  echo -e "${BOLD}${YELLOW}[?] $1 ${RESET}" | tee -a $LOGFILE
 }
 
 # Print error
 printE() {
-  echo -e "${BOLD}${RED}[!] $1 ${RESET}"
+  echo -e "${BOLD}${RED}[!] $1 ${RESET}" | tee -a $LOGFILE
 }
 
 # Command counter
@@ -160,14 +161,14 @@ else
 fi
 
 printf '%-10s %-67s %10s\n' " " "!############################################################!" " " | lolcat
-printf '%-15s %-8s %-35s %8s %15s\n' " " "######" "Target is $domain" "######" " " | lolcat
-printf '%-15s %-8s %-35s %8s %15s\n' " " "######" "Logdir is" "######" " " | lolcat
-printf '%-15s %-8s %-35s %8s %15s\n' " " "######" "$PRETTY" "######" " " | lolcat
-printf '%-15s %-8s %-35s %8s %15s\n' " " "######" "DEBUG is set to $DEBUGPRINT" "######" " " | lolcat
+printf '%-15s %-8s %-35s %8s %15s\n' " " "######" "Target is $domain" "######" " " | lolcat | tee -a $LOGFILE
+printf '%-15s %-8s %-35s %8s %15s\n' " " "######" "Logdir is" "######" " " | lolcat | tee -a $LOGFILE
+printf '%-15s %-8s %-35s %8s %15s\n' " " "######" "$PRETTY" "######" " " | lolcat | tee -a $LOGFILE
+printf '%-15s %-8s %-35s %8s %15s\n' " " "######" "DEBUG is set to $DEBUGPRINT" "######" " " | lolcat | tee -a $LOGFILE
 printf '%-10s %-67s %10s\n' " " "!############################################################!" " " | lolcat
 
-echo -e ""
-echo -e "${BOLD}${GREEN}[+] STEP 1: Starting Subdomain Enumeration"
+echo -e "" | tee -a $LOGFILE
+echo -e "${BOLD}${GREEN}[+] STEP 1: Starting Subdomain Enumeration" | tee -a $LOGFILE
 
 # Making directories
 print "Creating directories"
@@ -250,7 +251,7 @@ check "All domains"
 
 #########SUBDOMAIN HEADERS#########
 echo -e ""
-echo -e "${BOLD}${GREEN}[+] STEP 2: Storing subdomain website_data (headers and body)"
+echo -e "${BOLD}${GREEN}[+] STEP 2: Storing subdomain website_data (headers and body)" | tee -a $LOGFILE
 
 WEBSITE_DATA="$LOGDIR/website_data"
 print "mkdir website_data for headers & response bodies"
@@ -277,7 +278,7 @@ fi
 
 #########JAVASCRIPT FILES#########
 echo -e ""
-echo -e "${BOLD}${GREEN}[+] STEP 3: Collecting JavaScript files and Hidden Endpoints"
+echo -e "${BOLD}${GREEN}[+] STEP 3: Collecting JavaScript files and Hidden Endpoints" | tee -a $LOGFILE
 
 print "Making scripts directory"
 SCRIPT_DIR="$LOGDIR/javascript"
@@ -339,7 +340,7 @@ check "Move back to original directory"
 
 #########FILES AND DIRECTORIES#########
 echo -e ""
-echo -e "${BOLD}${GREEN}[+] STEP 4: Starting FFUF to find directories and hidden files"
+echo -e "${BOLD}${GREEN}[+] STEP 4: Starting FFUF to find directories and hidden files" | tee -a $LOGFILE
 
 # Make a new logdir for ffuf results
 FFUF_DIR="$LOGDIR/ffuf"
@@ -356,7 +357,7 @@ check "Interlace ffuf"
 
 #########NMAP#########
 echo -e ""
-echo -e "${BOLD}${GREEN}[+]STEP 5: Starting NMAP Scan for alive domains"
+echo -e "${BOLD}${GREEN}[+]STEP 5: Starting NMAP Scan for alive domains" | tee -a $LOGFILE
 NMAP_DIR="$LOGDIR/nmap"
 mkdir -p "$NMAP_DIR"
 
@@ -384,5 +385,5 @@ check "Move results to output folder"
 # LazyRecon
 
 # Send over to LazyRecon for further processing
-bash -c '"$TOOLDIR/lazyrecon/lazyrecon.sh" "$domain"'
-
+bash -c '"$TOOLDIR/lazyrecon/lazyrecon.sh" "$domain"' | tee -a $LOGFILE
+check "LazyRecon"
