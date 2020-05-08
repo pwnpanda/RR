@@ -64,7 +64,7 @@ usage() {
 }
 
 # Check that there is a domain supplied
-if [ $# -eq 0 ]
+if [ $# -lt 2 ]
   then
     usage
 fi
@@ -78,7 +78,7 @@ while getopts ":u:d:l:" o; do
     ;;
   l)
     LOGDIR=${OPTARG}
-    LOGDIR=$LOGDIR/$todate
+    LOGDIR="$LOGDIR/$todate"
   ;;
   d)
     DEBUG=
@@ -88,10 +88,15 @@ while getopts ":u:d:l:" o; do
     ;;
   esac
 done
+shift $((OPTIND-1))
+
+if [ -z "${domain}" ] || [ -z "${LOGDIR}" ]; then
+  usage
+fi
 
 #Paths
 TOOLDIR="/root/Bug_Bounty/tools"
-RESDIR="/root/Bug_Bounty/reports/$domain/$todate"
+RESDIR="/root/Bug_Bounty/reports/$domain"
 DNS_WORD_LIST=$TOOLDIR/wordlists/SecLists/Discovery/DNS/namelist.txt
 DIR_WORD_LIST=$TOOLDIR/wordlists/SecLists/Discovery/Web-Content/raft-medium-files-directories.txt
 LOGFILE="$LOGDIR/RR.log"
@@ -160,6 +165,13 @@ else
   DEBUGPRINT="OFF"
 fi
 
+# Making directories
+#print "Creating directories"
+mkdir -p "$LOGDIR"
+mkdir -p "$RESDIR"
+check "Creating directories"
+
+
 printf '%-10s %-67s %10s\n' " " "!############################################################!" " " | lolcat
 printf '%-15s %-8s %-35s %8s %15s\n' " " "######" "Target is $domain" "######" " " | lolcat | tee -a $LOGFILE
 printf '%-15s %-8s %-35s %8s %15s\n' " " "######" "Logdir is" "######" " " | lolcat | tee -a $LOGFILE
@@ -167,14 +179,12 @@ printf '%-15s %-8s %-35s %8s %15s\n' " " "######" "$PRETTY" "######" " " | lolca
 printf '%-15s %-8s %-35s %8s %15s\n' " " "######" "DEBUG is set to $DEBUGPRINT" "######" " " | lolcat | tee -a $LOGFILE
 printf '%-10s %-67s %10s\n' " " "!############################################################!" " " | lolcat
 
+echo "RESDIR is: $RESDIR & TOOLDIR is: $TOOLDIR" >> tee -a $LOGFILE
+
+
 echo -e "" | tee -a $LOGFILE
 echo -e "${BOLD}${GREEN}[+] STEP 1: Starting Subdomain Enumeration" | tee -a $LOGFILE
 
-# Making directories
-print "Creating directories"
-mkdir -p "$LOGDIR"
-mkdir -p "$RESDIR"
-check "Creating directories"
 
 #Amass
 print "Starting Amass"
@@ -375,7 +385,7 @@ rm -rf "$LOGDIR/tmp"
 check "Remove temporary directory"
 
 print "Move results to output folder"
-cp -R "$LOGDIR/" "$RESDIR"
+cp -R "$LOGDIR" "$RESDIR"
 check "Move results to output folder"
 
 ##############Request Smuggling check#######################
@@ -385,5 +395,5 @@ check "Move results to output folder"
 # LazyRecon
 
 # Send over to LazyRecon for further processing
-bash -c '"$TOOLDIR/lazyrecon/lazyrecon.sh" "$domain"' | tee -a $LOGFILE
+"$TOOLDIR/lazyrecon/lazyrecon.sh" "$domain" | tee -a $LOGFILE
 check "LazyRecon"
