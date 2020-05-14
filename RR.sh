@@ -28,8 +28,8 @@ gobusterDNSThreads=50
 domain=
 DEBUG=1
 #----------------------
-# Add go binaries
-PATH=$PATH:/root/go/bin
+# Add go binaries and other binaries
+PATH=$PATH:/root/go/bin:/snap/bin/:/usr/local/bin/
 #----------------------
 
 #################################################
@@ -74,11 +74,10 @@ while getopts ":u:d:l:" o; do
   case "${o}" in
   u)
     domain=${OPTARG}
-    LOGDIR="/root/Bug_Bounty/logs/$domain/$todate"
+    LOGDIR="/var/www/h4x.fun/reports/$domain/$todate"
     ;;
   l)
     LOGDIR=${OPTARG}
-    LOGDIR="$LOGDIR/$todate"
   ;;
   d)
     DEBUG=
@@ -99,7 +98,8 @@ TOOLDIR="/root/Bug_Bounty/tools"
 RESDIR="/root/Bug_Bounty/reports/$domain"
 DNS_WORD_LIST=$TOOLDIR/wordlists/SecLists/Discovery/DNS/namelist.txt
 DIR_WORD_LIST=$TOOLDIR/wordlists/SecLists/Discovery/Web-Content/raft-medium-files-directories.txt
-LOGFILE="$LOGDIR/RR.log"
+LOGFILE="$LOGDIR/RR_log.txt"
+TMPDIR="/root/Bug_Bounty/tmp"
 #----------------------
 
 ########################################
@@ -143,16 +143,18 @@ check() {
 ####################################
 
 # clear screen
-clear
+# clear
+#echo -n '
+#__________        ___.    .__       /\         __________
+#\______   \  ____ \_ |__  |__|  ____)/  ______ \______   \  ____   ____   ____    ____
+# |       _/ /  _ \ | __ \ |  | /    \  /  ___/  |       _/_/ __ \_/ ___\ /  _ \  /    \··
+# |    |   \(  <_> )| \_\ \|  ||   |  \ \___ \   |    |   \\  ___/\  \___(  <_> )|   |  \·
+# |____|_  / \____/ |___  /|__||___|  //____  >  |____|_  / \___  >\___  >\____/ |___|  /
+#        \/             \/          \/      \/          \/      \/     \/             \/
+#
+#
+#' | lolcat
 
-echo -e "
-__________        ___.    .__       /\\         __________
-\______   \\  ____ \\_ |__  |__|  ____)/  ______ \\______   \\  ____   ____   ____    ____
- |       _/ /  _ \\ | __ \\ |  | /    \\  /  ___/  |       _/_/ __ \\_/ ___\\ /  _ \\  /    \\
- |    |   \\(  <_> )| \\_\\ \\|  ||   |  \\ \\___ \\   |    |   \\  ___/\\  \\___(  <_> )|   |  \\
- |____|_  / \\____/ |___  /|__||___|  //____  >  |____|_  / \\___  >\\___  >\\____/ |___|  /
-        \\/             \\/          \\/      \\/          \\/      \\/     \\/             \\/
-\n\n" | lolcat
 if [[ $(echo -n "$LOGDIR" | wc -c) -gt 35 ]]; then
   PRETTY=$(echo -n "$LOGDIR" | tail -c 31)
   PRETTY="../~$PRETTY"
@@ -169,6 +171,7 @@ fi
 #print "Creating directories"
 mkdir -p "$LOGDIR"
 mkdir -p "$RESDIR"
+mkdir -p "$TMPDIR"
 check "Creating directories"
 
 
@@ -179,7 +182,7 @@ printf '%-15s %-8s %-35s %8s %15s\n' " " "######" "$PRETTY" "######" " " | lolca
 printf '%-15s %-8s %-35s %8s %15s\n' " " "######" "DEBUG is set to $DEBUGPRINT" "######" " " | lolcat | tee -a $LOGFILE
 printf '%-10s %-67s %10s\n' " " "!############################################################!" " " | lolcat
 
-echo "RESDIR is: $RESDIR & TOOLDIR is: $TOOLDIR" >> tee -a $LOGFILE
+echo "RESDIR is: $RESDIR & TOOLDIR is: $TOOLDIR" | tee -a $LOGFILE
 
 
 echo -e "" | tee -a $LOGFILE
@@ -188,8 +191,12 @@ echo -e "${BOLD}${GREEN}[+] STEP 1: Starting Subdomain Enumeration" | tee -a $LO
 
 #Amass
 print "Starting Amass"
-amass enum -norecursive -noalts -d "$domain" -o "$LOGDIR/domains.txt"
+amass enum -norecursive -noalts -d "$domain" -o "$TMPDIR/domains.txt"
 check "Amass"
+# Moving results due to weird amass behaviour
+print "Moving results"
+cp "$TMPDIR/domains.txt" "$LOGDIR/domains.txt"
+check "Move Amass results"
 
 #Crt.sh
 print "Certsh"
@@ -320,7 +327,7 @@ check "Create dir for extracted endpoints"
 # Extractor script
 EXTRACTOR="$TOOLDIR/relative-url-extractor/extract.rb"
 # getURL                                         #Basepath   #Folder    #script   #output path
-COMMAND="bash -c '$TOOLDIR/RR/support/getURL.sh $SCRIPT_DATA _target_ $EXTRACTOR $JS_ENDPOINTS/_target_'"
+COMMAND="bash -c '$TOOLDIR/RR/support/getURL.sh $SCRIPT_DATA _target_ $EXTRACTOR $JS_ENDPOINTS/_target_ $TMPDIR'"
 interlace --silent -tL "$LOGDIR/tmp/files2.txt" -threads 50 -c "$COMMAND"
 # Output is all endpoints detected within each JS file for the current domain (folder)
 # Output is stored in $JS_ENDPOINTS/_target_/<name-of-js-file>
@@ -395,5 +402,11 @@ check "Move results to output folder"
 # LazyRecon
 
 # Send over to LazyRecon for further processing
-"$TOOLDIR/lazyrecon/lazyrecon.sh" "$domain" | tee -a $LOGFILE
+print "LazyRecon"
+"$TOOLDIR/lazyrecon/lazyrecon.sh" -d "$domain" | tee -a $LOGFILE
 check "LazyRecon"
+
+print "Remove temporary dir"
+rm -rf "$TMPDIR"
+check "remove temporary dir"
+
