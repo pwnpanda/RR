@@ -245,16 +245,21 @@ check "Corsy"
 
 #Aquatone
 # Already runs in lazyrecon, disable for now until integrated
-#echo -e ""
-#echo -e "${BOLD}${GREEN}[+] Starting Aquatone to take screenshots"
+echo -e ""
+echo -e "${BOLD}${GREEN}[+] Starting Eyewitness to take screenshots"
+SCREENSHOTS="$LOGDIR/screenshots"
+mkdir -p "$SCREENSHOTS"
+check "mkdir screenshots"
 
-#mkdir -p "$LOGDIR/screenshots"
-#check "mkdir screenshots"
+print "Screenshotting with EyeWitness"
+# Not needed --prepend-https adds http(S)//: to all URLS without it
+$TOOLDIR/EyeWitness/Python/EyeWitness.py --web -f $LOGDIR/alive.txt -d $SCREENSHOTS --no-prompt --results 1
+check "Eyewitness"
 
 #cat "$LOGDIR/alive.txt" | aquatone -screenshot-timeout "$aquatoneTimeout" -out "$LOGDIR/screenshots/"
 #check "Aquatone"
 
-#Parse data jo JSON
+#Parse data to JSON
 
 print "Finding alive domains"
 # shellcheck disable=SC2002
@@ -283,6 +288,7 @@ print "Gather website_data and responses"
 touch "$LOGDIR/unresponsive.txt"
 # extractHeadBody                                         #URL    #Output base folder
 COMMAND="bash -c '$TOOLDIR/RR/support/extractHeadBody.sh _target_ $WEBSITE_DATA'"
+printW "DEBUG: $LOGDIR/alive.txt lines: $(cat $LOGDIR/alive.txt | wc -l)"
 interlace --silent -tL "$LOGDIR/alive.txt" -threads 50 -c "$COMMAND"
 # Output is headers and data from each web page
 # Output goes to $HEADERS and $BODIES
