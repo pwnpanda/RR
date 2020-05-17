@@ -40,6 +40,7 @@ githubToken=$(cat /root/Bug_Bounty/tools/github_token.txt)
 #----------------------
 subjackThreads=100
 subjackTime=30
+INTERTHREADS=50
 #aquatoneTimeout=50000
 #----------------------
 
@@ -59,7 +60,8 @@ usage() {
   echo "No arguments supplied, please supply a domain and optionally the base directory for results!"
   echo "Usage: ./RR.sh -u <domain> [-l Log Directory] [-d <anything>]"
   echo "[LOG Directory] needs to be a valid path"
-  echo "[-d] will activate debugging - it needs some input to work!"
+  echo "[-d] will activate debugging - it needs any input to work!"
+  echo "[-t] will set threads for interlace!"
   exit 1
 }
 
@@ -70,7 +72,7 @@ if [ $# -lt 2 ]
 fi
 
 # Check that there is a domain supplied
-while getopts ":u:d:l:" o; do
+while getopts ":u:d:l:t:" o; do
   case "${o}" in
   u)
     domain=${OPTARG}
@@ -81,6 +83,9 @@ while getopts ":u:d:l:" o; do
   ;;
   d)
     DEBUG=
+  ;;
+  t)
+    INTERTHREADS=${OPTARG}
   ;;
   *)
     usage
@@ -287,17 +292,24 @@ print "Gather website_data and responses"
 # Extract website_data and bodies of all endpoints
 touch "$LOGDIR/unresponsive.txt"
 # extractHeadBody                                         #URL    #Output base folder
-COMMAND="bash -c '$TOOLDIR/RR/support/extractHeadBody.sh _target_ $WEBSITE_DATA'"
-printW "DEBUG: $LOGDIR/alive.txt lines: $(cat $LOGDIR/alive.txt | wc -l)"
-interlace --silent -tL "$LOGDIR/alive.txt" -threads 50 -c "$COMMAND"
+for entry in $(cat "$LOGDIR/alive.txt"); do
+    $TOOLDIR/RR/support/extractHeadBody.sh $entry $WEBSITE_DATA &
+done
+#printW "DEBUG: $LOGDIR/alive.txt lines: $(cat $LOGDIR/alive.txt | wc -l)"
+#COMMAND="$TOOLDIR/RR/support/extractHeadBody.sh _target_ $WEBSITE_DATA"
+#interlace --silent -tL $LOGDIR/alive.txt -threads $INTERTHREADS -c "$COMMAND"
+#interlace -tL $LOGDIR/alive.txt -threads $INTERTHREADS -c "$COMMAND"
 # Output is headers and data from each web page
 # Output goes to $HEADERS and $BODIES
-check "Interlace get headers and bodies"
+check "Get headers and bodies"
 
 # log errors for the above command
 if [[ -s "$LOGDIR/unresponsive.txt" ]]; then
   printW "Unresponsive endpoints can be found in $LOGDIR/unresponsive.txt!"
 fi
+
+print "Wait for background processes to finish getting all data from webpages"
+wait
 
 #########JAVASCRIPT FILES#########
 echo -e ""
@@ -316,14 +328,19 @@ mkdir -p "$LOGDIR/tmp"
 ls "$BODIES/" > "$LOGDIR/tmp/files.txt"
 check "Get list of files with web page content"
 # getResponses                                      #Base path #Filename #Output data #Output urls
-COMMAND="bash -c '$TOOLDIR/RR/support/getResponses.sh $BODIES _target_ $SCRIPT_DATA $SCRIPT_URL'"
-interlace --silent -tL "$LOGDIR/tmp/files.txt" -threads 50 -c "$COMMAND"
+for entry in $(cat "$LOGDIR/tmp/files.txt"); do
+    $TOOLDIR/RR/support/getResponses.sh $BODIES $entry $SCRIPT_DATA $SCRIPT_URL &
+done
+check "Extracting scripts URLs from webpage and store contents"
+#COMMAND="$TOOLDIR/RR/support/getResponses.sh $BODIES _target_ $SCRIPT_DATA $SCRIPT_URL"
+#interlace --silent -tL $LOGDIR/tmp/files.txt -threads $INTERTHREADS -c "$COMMAND"
 # Output is the URL for the scripts in $DATA files (web page content) and the actual script
 # Output goes to $SCRIPT_URL and $SCRIPT_DATA
 # $SCRIPT_URL contains a file pr. domain with Script URLS.
 # $SCRIPT_DATA contains subfolders for each domain containing files named after the script with the content inside
-check "Interlace extract script URLs from web page content and store the script contents"
-
+#check "Interlace extract script URLs from web page content and store the script contents"
+print "Wait for content extraction to finish"
+wait
 
 ls "$SCRIPT_DATA" > "$LOGDIR/tmp/files2.txt"
 JS_ENDPOINTS="$SCRIPT_DIR/Extracted_endpoints"
@@ -333,8 +350,11 @@ check "Create dir for extracted endpoints"
 # Extractor script
 EXTRACTOR="$TOOLDIR/relative-url-extractor/extract.rb"
 # getURL                                         #Basepath   #Folder    #script   #output path
-COMMAND="bash -c '$TOOLDIR/RR/support/getURL.sh $SCRIPT_DATA _target_ $EXTRACTOR $JS_ENDPOINTS/_target_ $TMPDIR'"
-interlace --silent -tL "$LOGDIR/tmp/files2.txt" -threads 50 -c "$COMMAND"
+for entry in $(cat "$LOGDIR/tmp/files2.txt"); do
+    $TOOLDIR/RR/support/getURL.sh $SCRIPT_DATA $entry $EXTRACTOR $JS_ENDPOINTS/$entry $TMPDIR &
+done
+#COMMAND="$TOOLDIR/RR/support/getURL.sh $SCRIPT_DATA _target_ $EXTRACTOR $JS_ENDPOINTS/_target_ $TMPDIR"
+#interlace --silent -tL $LOGDIR/tmp/files2.txt -threads $INTERTHREADS -c "$COMMAND"
 # Output is all endpoints detected within each JS file for the current domain (folder)
 # Output is stored in $JS_ENDPOINTS/_target_/<name-of-js-file>
 check "Interlace extract endpoints from within found javascript files"
@@ -352,8 +372,11 @@ JSEARCH_DIR="$LOGDIR/jsearch"
 mkdir -p "$JSEARCH_DIR"
 
 # getJS                                        #domain     #Tool                      #Organization     #Output folder
-COMMAND="bash -c '$TOOLDIR/RR/support/getJS.sh _target_ $TOOLDIR/jsearch/jsearch.py $organitzationName $JSEARCH_DIR'"
-interlace --silent -tL "$LOGDIR/alive.txt" -threads 50 -c "$COMMAND"
+for entry in $(cat "$LOGDIR/alive.txt"); do
+    $TOOLDIR/RR/support/getJS.sh $entry $TOOLDIR/jsearch/jsearch.py $organitzationName $JSEARCH_DIR &
+done
+#COMMAND="$TOOLDIR/RR/support/getJS.sh _target_ $TOOLDIR/jsearch/jsearch.py $organitzationName $JSEARCH_DIR"
+#interlace --silent -tL $LOGDIR/alive.txt -threads $INTERTHREADS -c "$COMMAND"
 # Output is all files related to the organization name from the current domain
 # Output is stored in $JSEARCH_DIR/_target_/_target_.txt
 check "Interlace get JS based on organization name from Jsearch"
@@ -369,11 +392,18 @@ echo -e "${BOLD}${GREEN}[+] STEP 4: Starting FFUF to find directories and hidden
 FFUF_DIR="$LOGDIR/ffuf"
 mkdir -p "$FFUF_DIR"
 
-# FFUF Directory scan
+# FFUF Directory scan - Seems to often have issues, so run normally
+
+# Slow version
+for entry in $(cat "$LOGDIR/alive.txt"); do
+    $TOOLDIR/RR/support/ffufDir.sh $entry $DIR_WORD_LIST $FFUF_Threads $FFUF_DIR &
+    check "FFUF as background task"
+done
+# Fast version
 # ffufDir                                         #domain  #Wordlist      # Threads     #Out dir
-COMMAND="bash -c '$TOOLDIR/RR/support/ffufDir.sh _target_ $DIR_WORD_LIST $FFUF_Threads $FFUF_DIR'"
-interlace --silent -tL "$LOGDIR/alive.txt" -threads 50 -c "$COMMAND"
-check "Interlace ffuf"
+#COMMAND="$TOOLDIR/RR/support/ffufDir.sh _target_ $DIR_WORD_LIST $FFUF_Threads $FFUF_DIR"
+#interlace --silent -tL $LOGDIR/alive.txt -threads $INTERTHREADS -c "$COMMAND"
+#check "Interlace ffuf"
 # Output is found directories
 # Output can be found in $LOGDIR/ffuf/domain.txt
 
@@ -386,12 +416,18 @@ mkdir -p "$NMAP_DIR"
 
 # nmap all hosts
 # nmapHost                                      #target url #Output dir
-COMMAND="bash -c '$TOOLDIR/RR/support/nmapHost.sh _target_ $LOGDIR'"
-interlace --silent -tL "$LOGDIR/domains.txt" -threads 50 -c "$COMMAND"
+for entry in $(cat "$LOGDIR/domains.txt"); do
+    $TOOLDIR/RR/support/nmapHost.sh $entry $LOGDIR &
+    check "NMAP as background task"
+done
+
+#COMMAND="$TOOLDIR/RR/support/nmapHost.sh _target_ $LOGDIR"
+#interlace --silent -tL "$LOGDIR/domains.txt" -threads $INTERTHREADS -c "$COMMAND"
 # Output is open ports
 # Output can be found in $LOGDIR/nmap/_target_.res
-check "Interlace NMAP scan"
-
+#check "Interlace NMAP scan"
+print "Waiting for all background processes to finish!"
+wait
 
 print "Remove temporary directory"
 rm -rf "$LOGDIR/tmp"
@@ -400,6 +436,17 @@ check "Remove temporary directory"
 print "Move results to output folder"
 cp -R "$LOGDIR" "$RESDIR"
 check "Move results to output folder"
+
+print "Remove screenshots from git repo"
+rm -rf "$RESDIR/screenshots"
+check "Removed screenshots from output"
+
+print "Move all files out of date-folder"
+cp -rf "$RESDIR/$todate" "$RESDIR"
+check "Move files out of date-folder"
+printf "Remove date folder"
+rm -rf "$RESDIR/$todate"
+check "Remove date folder"
 
 ##############Request Smuggling check#######################
 
