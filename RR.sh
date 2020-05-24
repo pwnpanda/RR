@@ -23,7 +23,8 @@ todate=$(date +"%Y-%m-%d")
 ########################################
 
 # Customizations
-FFUF_Threads=50
+# change from 50 to not get oom killed
+FFUF_Threads=30
 gobusterDNSThreads=50
 domain=
 DEBUG=1
@@ -337,7 +338,7 @@ check "Created JS folders"
 ls "$BODIES/" > "$TMPDIR/files.txt"
 check "Get list of files with web page content"
 # getResponses                                      #Base path #Filename #Output data #Output urls
-for entry in $(cat "$TMPDIR/files.txt"); do
+for entry in $(cat "$TMPDIR/files.txt" | sort | uniq ); do
     $TOOLDIR/RR/support/getResponses.sh $BODIES $entry $SCRIPT_DATA $SCRIPT_URL &
 done
 check "Extracting scripts URLs from webpage and store contents"
@@ -359,7 +360,7 @@ check "Create dir for extracted endpoints"
 # Extractor script
 EXTRACTOR="$TOOLDIR/relative-url-extractor/extract.rb"
 # getURL                                         #Basepath   #Folder    #script   #output path
-for entry in $(cat "$TMPDIR/files2.txt"); do
+for entry in $(cat "$TMPDIR/files2.txt" | sort | uniq ); do
     $TOOLDIR/RR/support/getURL.sh $SCRIPT_DATA $entry $EXTRACTOR $JS_ENDPOINTS/$entry $TMPDIR &
 done
 #COMMAND="$TOOLDIR/RR/support/getURL.sh $SCRIPT_DATA _target_ $EXTRACTOR $JS_ENDPOINTS/_target_ $TMPDIR"
@@ -381,7 +382,7 @@ JSEARCH_DIR="$LOGDIR/jsearch"
 mkdir -p "$JSEARCH_DIR"
 
 # getJS                                        #domain     #Tool                      #Organization     #Output folder
-for entry in $(cat "$LOGDIR/alive.txt"); do
+for entry in $(cat "$LOGDIR/alive.txt" | sort | uniq ); do
     $TOOLDIR/RR/support/getJS.sh $entry $TOOLDIR/jsearch/jsearch.py $organitzationName $JSEARCH_DIR &
 done
 #COMMAND="$TOOLDIR/RR/support/getJS.sh _target_ $TOOLDIR/jsearch/jsearch.py $organitzationName $JSEARCH_DIR"
@@ -405,11 +406,12 @@ mkdir -p "$FFUF_DIR"
 
 # Slow version
 run=0
-for entry in $(cat "$LOGDIR/alive.txt"); do
+for entry in $(cat "$LOGDIR/alive.txt" | sort | uniq ); do
     ((run++))
     $TOOLDIR/RR/support/ffufDir.sh $entry $DIR_WORD_LIST $FFUF_Threads $FFUF_DIR &
-    check "FFUF as background task #$run"
-    if [[ run > 4]]; then
+    check "FFUF as background task $run"
+    if [ $run -gt 3 ]
+    then
         print "Hit 4 concurrent scans - waiting to not run out of memory"
         run=0
         wait
@@ -417,9 +419,9 @@ for entry in $(cat "$LOGDIR/alive.txt"); do
 done
 # Fast version
 # ffufDir                                         #domain  #Wordlist      # Threads     #Out dir
-#COMMAND="$TOOLDIR/RR/support/ffufDir.sh _target_ $DIR_WORD_LIST $FFUF_Threads $FFUF_DIR"
-#interlace --silent -tL $LOGDIR/alive.txt -threads $INTERTHREADS -c "$COMMAND"
-#check "Interlace ffuf"
+# COMMAND="$TOOLDIR/RR/support/ffufDir.sh _target_ $DIR_WORD_LIST $FFUF_Threads $FFUF_DIR"
+# interlace --silent -tL $LOGDIR/alive.txt -threads $INTERTHREADS -c "$COMMAND"
+# check "Interlace ffuf"
 # Output is found directories
 # Output can be found in $LOGDIR/ffuf/domain.txt
 
