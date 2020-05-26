@@ -417,6 +417,8 @@ for entry in $(cat "$LOGDIR/alive.txt" | sort | uniq ); do
         wait
     fi
 done
+print "Waiting for last ffuf scans"
+wait
 # Fast version
 # ffufDir                                         #domain  #Wordlist      # Threads     #Out dir
 # COMMAND="$TOOLDIR/RR/support/ffufDir.sh _target_ $DIR_WORD_LIST $FFUF_Threads $FFUF_DIR"
@@ -434,8 +436,8 @@ mkdir -p "$NMAP_DIR"
 
 # nmap all hosts
 # nmapHost                                      #target url #Output dir
-for entry in $(cat "$LOGDIR/domains.txt"); do
-    $TOOLDIR/RR/support/nmapHost.sh $entry $LOGDIR &
+for entry in $(cat "$LOGDIR/domains.txt" | sort | uniq ); do
+    $TOOLDIR/RR/support/nmapHost.sh $entry $NMAP_DIR $TMPDIR &
     check "NMAP as background task"
 done
 
@@ -475,16 +477,20 @@ wait
 #########Check for Open Redirects or SSRFs#################
 # echo all domains
 # run against ssrf_OR_Identifier.sh
-echo "$LOGDIR/domains.txt" >> "$TMPDIR/all_domains.txt"
-echo "$LOGDIR/$recon-$todate/alldomains.txt" >> "$TMPDIR/all_domains.txt"
-echo "$TMPDIR/all_domains.txt" | sort | uniq >> "$LOGDIR/all_domains.txt"
+cat "$LOGDIR/domains.txt" >> "$TMPDIR/all_domains.txt"
+cat "$LOGDIR/recon-$todate/alldomains.txt" >> "$TMPDIR/all_domains.txt"
+cat "$TMPDIR/all_domains.txt" | sort | uniq >> "$LOGDIR/all_domains.txt"
+mkdir -p $LOGDIR/ssrf
 
 for entry in $(cat "$LOGDIR/all_domains.txt"); do
-    $TOOLDIR/RR/support/ssrf_OR_Identifier.sh "$entry" "http://ssrf.h4x.fun/x/n6Sfr?$entry"
+    $TOOLDIR/RR/support/ssrf_OR_Identifier.sh "$entry" "http://ssrf.h4x.fun/x/n6Sfr?$entry" "$LOGDIR/ssrf" "$TMPDIR"
     check "SSRF / OR identifier for $entry"
 done
 ##############SQLi Check####################################
 # TODO add tamperscripts
+# Clean up parameters
+
+
 print "Make dir and run sqlmap"
 mkdir -p $LOGDIR/sqlmap/
 URLFILE="$LOGDIR/recon-$todate/wayback-data/waybackurls_clean.txt"
