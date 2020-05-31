@@ -483,7 +483,7 @@ cat "$TMPDIR/all_domains.txt" | sort | uniq >> "$LOGDIR/all_domains.txt"
 mkdir -p $LOGDIR/ssrf
 
 for entry in $(cat "$LOGDIR/all_domains.txt"); do
-    $TOOLDIR/RR/support/ssrf_OR_Identifier.sh "$entry" "http://ssrf.h4x.fun/x/n6Sfr?$entry" "$LOGDIR/ssrf" "$TMPDIR"
+    $TOOLDIR/RR/support/ssrf_OR_Identifier.sh "$entry" "http://ssrf.h4x.fun/x/pqCLV?$entry" "$LOGDIR/ssrf" "$TMPDIR"
     check "SSRF / OR identifier for $entry"
 done
 ##############SQLi Check####################################
