@@ -12,7 +12,7 @@ RED=$(tput setaf 1)
 
 # Make output folder for current domain being processed
 # In case .txt is appended, remove it
-OUT=$(echo "$4"| sed s/.txt//g)
+OUT=$(echo "$4" | sed s/.txt//g | sed s/.html//g)
 mkdir -p "$OUT"
 ID=$RANDOM
 echo "1: $1 2: $2 3: $3 4: $4 5: $5" >>"$5/getURL_$ID.txt"

