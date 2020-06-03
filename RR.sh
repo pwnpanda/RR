@@ -499,7 +499,8 @@ done
 # Run against domain
 print "SSRFire"
 mkdir -p $LOGDIR/ssrf/ssrfire
-$TOOLDIR/SSRFire/ssrfire.sh -d "$domain" -s "http://ssrf.h4x.fun/x/pqCLV?$domain" >> "$LOGDIR/ssrf/ssrfire/log.txt"
+# SSRFire will automatically add test url to callback
+$TOOLDIR/SSRFire/ssrfire.sh -d "$domain" -s "http://ssrf.h4x.fun/x/pqCLV" >> "$LOGDIR/ssrf/ssrfire/log.txt"
 check "SSRFire"
 cp -r $TOOLDIR/SSRFire/output/$domain $LOGDIR/ssrf/ssrfire
 check "Copy results ssrfire"
