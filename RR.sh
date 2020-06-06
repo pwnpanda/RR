@@ -78,10 +78,10 @@ while getopts ":u:d:l:t:c:" o; do
   case "${o}" in
   u)
     domain=${OPTARG}
-    LOGDIR="/var/www/h4x.fun/reports/$domain/$todate"
+    SAVEDIR="/var/www/h4x.fun/reports/$domain/$todate"
     ;;
   l)
-    LOGDIR=${OPTARG}
+    SAVEDIR=${OPTARG}
     set=1
   ;;
   d)
@@ -93,10 +93,10 @@ while getopts ":u:d:l:t:c:" o; do
   t)
     todate=${OPTARG}
     if [[ "$set" -eq 0 ]]; then
-        LOGDIR="/var/www/h4x.fun/reports/$domain/$todate"
+        SAVEDIR="/var/www/h4x.fun/reports/$domain/$todate"
     else
-        LOGDIR=$(echo $LOGDIR | sed 's:/*$::')
-        LOGDIR="$LOGDIR/$todate"
+        SAVEDIR=$(echo $SAVEDIR | sed 's:/*$::')
+        SAVEDIR="$SAVEDIR/$todate"
     fi
     ;;
   *)
@@ -106,7 +106,7 @@ while getopts ":u:d:l:t:c:" o; do
 done
 shift $((OPTIND-1))
 
-if [ -z "${domain}" ] || [ -z "${LOGDIR}" ]; then
+if [ -z "${domain}" ] || [ -z "${SAVEDIR}" ]; then
   usage
 fi
 
@@ -115,8 +115,9 @@ TOOLDIR="/root/Bug_Bounty/tools"
 RESDIR="/root/Bug_Bounty/reports/$domain"
 DNS_WORD_LIST=$TOOLDIR/wordlists/SecLists/Discovery/DNS/namelist.txt
 DIR_WORD_LIST=$TOOLDIR/wordlists/SecLists/Discovery/Web-Content/raft-medium-files-directories.txt
-LOGFILE="$LOGDIR/RR_log.txt"
 TMPDIR="/root/Bug_Bounty/tmp"
+LOGS="$SAVEDIR/LOGS"
+LOGFILE="$LOGS/RR_log.txt"
 #----------------------
 
 ########################################
@@ -172,11 +173,11 @@ check() {
 #
 #' | lolcat
 
-if [[ $(echo -n "$LOGDIR" | wc -c) -gt 35 ]]; then
-  PRETTY=$(echo -n "$LOGDIR" | tail -c 31)
+if [[ $(echo -n "$SAVEDIR" | wc -c) -gt 35 ]]; then
+  PRETTY=$(echo -n "$SAVEDIR" | tail -c 31)
   PRETTY="../~$PRETTY"
 else
-  PRETTY=$LOGDIR
+  PRETTY=$SAVEDIR
 fi
 if [ -z "$DEBUG" ]; then
   DEBUGPRINT="ON"
@@ -186,9 +187,10 @@ fi
 
 # Making directories
 #print "Creating directories"
-mkdir -p "$LOGDIR"
+mkdir -p "$SAVEDIR"
 mkdir -p "$RESDIR"
 mkdir -p "$TMPDIR"
+mkdir -p "$LOGS"
 check "Creating directories"
 
 
@@ -211,87 +213,87 @@ amass enum -norecursive -noalts -d "$domain" -o "$TMPDIR/domains.txt"
 check "Amass"
 # Moving results due to weird amass behaviour
 print "Moving results"
-cp "$TMPDIR/domains.txt" "$LOGDIR/domains.txt"
+cp "$TMPDIR/domains.txt" "$SAVEDIR/domains.txt"
 check "Move Amass results"
 
 #Crt.sh
 print "Certsh"
-python "$TOOLDIR/CertificateTransparencyLogs/certsh.py" -d "$domain" | tee -a "$LOGDIR/domains.txt"
+python "$TOOLDIR/CertificateTransparencyLogs/certsh.py" -d "$domain" | tee -a "$SAVEDIR/domains.txt"
 check "Certsh"
 
 #Github-Search
 print "Github-subdomains.py"
-python3 "$TOOLDIR/github-search/github-subdomains.py" -d "$domain" -t "$githubToken" | tee -a "$LOGDIR/domains.txt"
+python3 "$TOOLDIR/github-search/github-subdomains.py" -d "$domain" -t "$githubToken" | tee -a "$SAVEDIR/domains.txt"
 check "Github-subdomains.py"
 
 #Gobuster
 print "Gobuster DNS"
-gobuster dns -d "$domain" -w "$DNS_WORD_LIST" -t "$gobusterDNSThreads" -o "$LOGDIR/gobusterDomains.txt"
+gobuster dns -d "$domain" -w "$DNS_WORD_LIST" -t "$gobusterDNSThreads" -o "$SAVEDIR/gobusterDomains.txt"
 check "Gobuster DNS"
-sed 's/Found: //g' "$LOGDIR/gobusterDomains.txt" >> "$LOGDIR/domains.txt"
-rm "$LOGDIR/gobusterDomains.txt"
+sed 's/Found: //g' "$SAVEDIR/gobusterDomains.txt" >> "$SAVEDIR/domains.txt"
+rm "$SAVEDIR/gobusterDomains.txt"
 
 # Assetfinder
 print "Assetfinder"
-assetfinder --subs-only "$domain" | tee -a "$LOGDIR/domains.txt"
+assetfinder --subs-only "$domain" | tee -a "$SAVEDIR/domains.txt"
 check "Assetfinder"
 
 # Subjack
 print "Subjack for search subdomains takeover"
-subjack -w "$LOGDIR/domains.txt" -t "$subjackThreads" -timeout "$subjackTime" -ssl -c "/root/go/src/github.com/haccer/subjack/fingerprints.json" -v 3
+subjack -w "$SAVEDIR/domains.txt" -t "$subjackThreads" -timeout "$subjackTime" -ssl -c "/root/go/src/github.com/haccer/subjack/fingerprints.json" -v 3 | tee -a "$SAVEDIR/subjack.txt"
 check "Subjack"
 
 #Removing duplicate entries
-sort -u "$LOGDIR/domains.txt" -o "$LOGDIR/domains.txt"
+sort -u "$SAVEDIR/domains.txt" -o "$SAVEDIR/domains.txt"
 
 #Discovering alive domains
 echo -e ""
 print " Checking for alive domains.."
 # shellcheck disable=SC2002
-cat "$LOGDIR/domains.txt" | httprobe -c 50 -t 3000 | tee -a "$LOGDIR/alive.txt"
+cat "$SAVEDIR/domains.txt" | httprobe -c 50 -t 3000 | tee -a "$SAVEDIR/alive.txt"
 check "Alive domains with HTTProbe"
 
-sort "$LOGDIR/alive.txt" | uniq -u
+sort "$SAVEDIR/alive.txt" | uniq -u
 
 #Corsy
 echo -e ""
 print "Corsy to find CORS missconfigurations"
-python3 "$TOOLDIR/Corsy/corsy.py" -i "$LOGDIR/alive.txt" -o "$LOGDIR/CORS.txt"
+python3 "$TOOLDIR/Corsy/corsy.py" -i "$SAVEDIR/alive.txt" -o "$SAVEDIR/CORS.txt"
 check "Corsy"
 
 #Aquatone
 # Already runs in lazyrecon, disable for now until integrated
 echo -e ""
 echo -e "${BOLD}${GREEN}[+] Starting Eyewitness to take screenshots"
-SCREENSHOTS="$LOGDIR/screenshots"
+SCREENSHOTS="$SAVEDIR/screenshots"
 mkdir -p "$SCREENSHOTS"
 check "mkdir screenshots"
 
 print "Screenshotting with EyeWitness"
 # Not needed --prepend-https adds http(S)//: to all URLS without it
-$TOOLDIR/EyeWitness/Python/EyeWitness.py --web -f $LOGDIR/alive.txt -d $SCREENSHOTS --no-prompt --results 1
+$TOOLDIR/EyeWitness/Python/EyeWitness.py --web -f $SAVEDIR/alive.txt -d $SCREENSHOTS --no-prompt --results 1
 check "Eyewitness"
 
-#cat "$LOGDIR/alive.txt" | aquatone -screenshot-timeout "$aquatoneTimeout" -out "$LOGDIR/screenshots/"
+#cat "$SAVEDIR/alive.txt" | aquatone -screenshot-timeout "$aquatoneTimeout" -out "$SAVEDIR/screenshots/"
 #check "Aquatone"
 
 #Parse data to JSON
 
 print "Finding alive domains"
 # shellcheck disable=SC2002
-cat "$LOGDIR/alive.txt" | python -c "import sys; import json; print (json.dumps({'domains':list(sys.stdin)}))" > "$LOGDIR/alive.json"
+cat "$SAVEDIR/alive.txt" | python -c "import sys; import json; print (json.dumps({'domains':list(sys.stdin)}))" > "$SAVEDIR/alive.json"
 check "Alive domains"
 
 print "Get all domains"
 # shellcheck disable=SC2002
-cat "$LOGDIR/domains.txt" | python -c "import sys; import json; print (json.dumps({'domains':list(sys.stdin)}))" > "$LOGDIR/domains.json"
+cat "$SAVEDIR/domains.txt" | python -c "import sys; import json; print (json.dumps({'domains':list(sys.stdin)}))" > "$SAVEDIR/domains.json"
 check "All domains"
 
 #########SUBDOMAIN HEADERS#########
 echo -e ""
 echo -e "${BOLD}${GREEN}[+] STEP 2: Storing subdomain website_data (headers and body)" | tee -a $LOGFILE
 
-WEBSITE_DATA="$LOGDIR/website_data"
+WEBSITE_DATA="$SAVEDIR/website_data"
 print "mkdir website_data for headers & response bodies"
 HEADERS="$WEBSITE_DATA/header" #headers from web page
 mkdir -p "$HEADERS"
@@ -301,22 +303,22 @@ check "mkdir website_data"
 
 print "Gather website_data and responses"
 # Extract website_data and bodies of all endpoints
-touch "$LOGDIR/unresponsive.txt"
+touch "$SAVEDIR/unresponsive.txt"
 # extractHeadBody                                         #URL    #Output base folder
-for entry in $(cat "$LOGDIR/alive.txt"); do
+for entry in $(cat "$SAVEDIR/alive.txt"); do
     $TOOLDIR/RR/support/extractHeadBody.sh $entry $WEBSITE_DATA &
 done
-#printW "DEBUG: $LOGDIR/alive.txt lines: $(cat $LOGDIR/alive.txt | wc -l)"
+#printW "DEBUG: $SAVEDIR/alive.txt lines: $(cat $SAVEDIR/alive.txt | wc -l)"
 #COMMAND="$TOOLDIR/RR/support/extractHeadBody.sh _target_ $WEBSITE_DATA"
-#interlace --silent -tL $LOGDIR/alive.txt -threads $INTERTHREADS -c "$COMMAND"
-#interlace -tL $LOGDIR/alive.txt -threads $INTERTHREADS -c "$COMMAND"
+#interlace --silent -tL $SAVEDIR/alive.txt -threads $INTERTHREADS -c "$COMMAND"
+#interlace -tL $SAVEDIR/alive.txt -threads $INTERTHREADS -c "$COMMAND"
 # Output is headers and data from each web page
 # Output goes to $HEADERS and $BODIES
 check "Get headers and bodies"
 
 # log errors for the above command
-if [[ -s "$LOGDIR/unresponsive.txt" ]]; then
-  printW "Unresponsive endpoints can be found in $LOGDIR/unresponsive.txt!"
+if [[ -s "$SAVEDIR/unresponsive.txt" ]]; then
+  printW "Unresponsive endpoints can be found in $SAVEDIR/unresponsive.txt!"
 fi
 
 print "Wait for background processes to finish getting all data from webpages"
@@ -327,7 +329,7 @@ echo -e ""
 echo -e "${BOLD}${GREEN}[+] STEP 3: Collecting JavaScript files and Hidden Endpoints" | tee -a $LOGFILE
 
 print "Making scripts directory"
-SCRIPT_DIR="$LOGDIR/javascript"
+SCRIPT_DIR="$SAVEDIR/javascript"
 mkdir -p "$SCRIPT_DIR"
 SCRIPT_URL="$SCRIPT_DIR/URLS"
 mkdir -p "$SCRIPT_URL"
@@ -343,7 +345,7 @@ for entry in $(cat "$TMPDIR/files.txt" | sort | uniq ); do
 done
 check "Extracting scripts URLs from webpage and store contents"
 #COMMAND="$TOOLDIR/RR/support/getResponses.sh $BODIES _target_ $SCRIPT_DATA $SCRIPT_URL"
-#interlace --silent -tL $LOGDIR/tmp/files.txt -threads $INTERTHREADS -c "$COMMAND"
+#interlace --silent -tL $SAVEDIR/tmp/files.txt -threads $INTERTHREADS -c "$COMMAND"
 # Output is the URL for the scripts in $DATA files (web page content) and the actual script
 # Output goes to $SCRIPT_URL and $SCRIPT_DATA
 # $SCRIPT_URL contains a file pr. domain with Script URLS.
@@ -364,10 +366,10 @@ for entry in $(cat "$TMPDIR/files2.txt" | sort | uniq ); do
     $TOOLDIR/RR/support/getURL.sh $SCRIPT_DATA $entry $EXTRACTOR $JS_ENDPOINTS/$entry $TMPDIR &
 done
 #COMMAND="$TOOLDIR/RR/support/getURL.sh $SCRIPT_DATA _target_ $EXTRACTOR $JS_ENDPOINTS/_target_ $TMPDIR"
-#interlace --silent -tL $LOGDIR/tmp/files2.txt -threads $INTERTHREADS -c "$COMMAND"
+#interlace --silent -tL $SAVEDIR/tmp/files2.txt -threads $INTERTHREADS -c "$COMMAND"
 # Output is all endpoints detected within each JS file for the current domain (folder)
 # Output is stored in $JS_ENDPOINTS/_target_/<name-of-js-file>
-check "Interlace extract endpoints from within found javascript files"
+check "Extract endpoints from within found javascript files"
 
 print "Jsearch.py"
 organitzationName=$(echo "$domain" | awk -F '.' '{ print $domain }')
@@ -378,18 +380,18 @@ check "Change pwd to tmp"
 
 print "Making directory for javascript"
 # Dir creation is by absolute path so no worries
-JSEARCH_DIR="$LOGDIR/jsearch"
+JSEARCH_DIR="$SAVEDIR/jsearch"
 mkdir -p "$JSEARCH_DIR"
 
 # getJS                                        #domain     #Tool                      #Organization     #Output folder
-for entry in $(cat "$LOGDIR/alive.txt" | sort | uniq ); do
+for entry in $(cat "$SAVEDIR/alive.txt" | sort | uniq ); do
     $TOOLDIR/RR/support/getJS.sh $entry $TOOLDIR/jsearch/jsearch.py $organitzationName $JSEARCH_DIR &
 done
 #COMMAND="$TOOLDIR/RR/support/getJS.sh _target_ $TOOLDIR/jsearch/jsearch.py $organitzationName $JSEARCH_DIR"
-#interlace --silent -tL $LOGDIR/alive.txt -threads $INTERTHREADS -c "$COMMAND"
+#interlace --silent -tL $SAVEDIR/alive.txt -threads $INTERTHREADS -c "$COMMAND"
 # Output is all files related to the organization name from the current domain
 # Output is stored in $JSEARCH_DIR/_target_/_target_.txt
-check "Interlace get JS based on organization name from Jsearch"
+check "Get JS based on organization name from Jsearch"
 # Change back to normal dir because Jsearch is done
 cd "$PRE"
 check "Move back to original directory"
@@ -399,14 +401,14 @@ echo -e ""
 echo -e "${BOLD}${GREEN}[+] STEP 4: Starting FFUF to find directories and hidden files" | tee -a $LOGFILE
 
 # Make a new logdir for ffuf results
-FFUF_DIR="$LOGDIR/ffuf"
+FFUF_DIR="$SAVEDIR/ffuf"
 mkdir -p "$FFUF_DIR"
 
 # FFUF Directory scan - Seems to often have issues, so run normally
 
 # Slow version
 run=0
-for entry in $(cat "$LOGDIR/alive.txt" | sort | uniq ); do
+for entry in $(cat "$SAVEDIR/alive.txt" | sort | uniq ); do
     ((run++))
     $TOOLDIR/RR/support/ffufDir.sh $entry $DIR_WORD_LIST $FFUF_Threads $FFUF_DIR &
     check "FFUF as background task $run"
@@ -422,38 +424,48 @@ wait
 # Fast version
 # ffufDir                                         #domain  #Wordlist      # Threads     #Out dir
 # COMMAND="$TOOLDIR/RR/support/ffufDir.sh _target_ $DIR_WORD_LIST $FFUF_Threads $FFUF_DIR"
-# interlace --silent -tL $LOGDIR/alive.txt -threads $INTERTHREADS -c "$COMMAND"
+# interlace --silent -tL $SAVEDIR/alive.txt -threads $INTERTHREADS -c "$COMMAND"
 # check "Interlace ffuf"
 # Output is found directories
-# Output can be found in $LOGDIR/ffuf/domain.txt
+# Output can be found in $SAVEDIR/ffuf/domain.txt
 
 
 #########NMAP#########
 echo -e ""
 echo -e "${BOLD}${GREEN}[+]STEP 5: Starting NMAP Scan for alive domains" | tee -a $LOGFILE
-NMAP_DIR="$LOGDIR/nmap"
+NMAP_DIR="$SAVEDIR/nmap"
 mkdir -p "$NMAP_DIR"
 
 # nmap all hosts
 # nmapHost                                      #target url #Output dir
-for entry in $(cat "$LOGDIR/domains.txt" | sort | uniq ); do
+run=0
+for entry in $(cat "$SAVEDIR/domains.txt" | sort | uniq ); do
+    ((run++))
     $TOOLDIR/RR/support/nmapHost.sh $entry $NMAP_DIR $TMPDIR &
     check "NMAP as background task"
+    if [ $run -gt 15 ]
+    then
+        print "Hit 15 concurrent scans - waiting to not run out of memory"
+        run=0
+        wait
+    fi
 done
+print "Waiting for last nmap scans"
+wait
 
-# COMMAND="$TOOLDIR/RR/support/nmapHost.sh _target_ $LOGDIR"
-# interlace --silent -tL "$LOGDIR/domains.txt" -threads $INTERTHREADS -c "$COMMAND"
+# COMMAND="$TOOLDIR/RR/support/nmapHost.sh _target_ $SAVEDIR"
+# interlace --silent -tL "$SAVEDIR/domains.txt" -threads $INTERTHREADS -c "$COMMAND"
 # Output is open ports
-# Output can be found in $LOGDIR/nmap/_target_.res
+# Output can be found in $SAVEDIR/nmap/_target_.res
 # check "Interlace NMAP scan"
 print "Waiting for all background processes to finish!"
 wait
 
 # Needs to be done AFTER lazyrecon...
 # print "Move results to output folder"
-# LOGDIR="/var/www/h4x.fun/reports/$domain/$todate"
+# SAVEDIR="/var/www/h4x.fun/reports/$domain/$todate"
 # RESDIR="/root/Bug_Bounty/reports/$domain"
-# cp -R $LOGDIR/* $RESDIR
+# cp -R $SAVEDIR/* $RESDIR
 # check "Move results to output folder"
 
 # print "Remove screenshots from git repo"
@@ -481,37 +493,38 @@ wait
 
 #########Check for Open Redirects or SSRFs#################
 # TODO Check with gf & gf-patterns
+
 # echo all domains
 # run against ssrf_OR_Identifier.sh
 print "SSRF / OR script"
-cat "$LOGDIR/domains.txt" >> "$TMPDIR/all_domains.txt"
-cat "$LOGDIR/recon-$todate/alldomains.txt" >> "$TMPDIR/all_domains.txt"
-cat "$TMPDIR/all_domains.txt" | sort | uniq >> "$LOGDIR/all_domains.txt"
-mkdir -p $LOGDIR/ssrf
+cat "$SAVEDIR/domains.txt" >> "$TMPDIR/all_domains.txt"
+cat "$SAVEDIR/recon-$todate/alldomains.txt" >> "$TMPDIR/all_domains.txt"
+cat "$TMPDIR/all_domains.txt" | sort | uniq >> "$SAVEDIR/all_domains.txt"
+mkdir -p $SAVEDIR/ssrf
 
 # check using script from Twitter
-for entry in $(cat "$LOGDIR/all_domains.txt"); do
-    $TOOLDIR/RR/support/ssrf_OR_Identifier.sh "$entry" "http://ssrf.h4x.fun/x/pqCLV?$entry" "$LOGDIR/ssrf" "$TMPDIR"
+for entry in $(cat "$SAVEDIR/all_domains.txt"); do
+    $TOOLDIR/RR/support/ssrf_OR_Identifier.sh "$entry" "http://ssrf.h4x.fun/x/pqCLV?$entry" "$SAVEDIR/ssrf" "$TMPDIR"
     check "SSRF / OR identifier for $entry"
 done
 
 # Check using SSRFire
 # Run against domain
 print "SSRFire"
-mkdir -p $LOGDIR/ssrf/ssrfire
+mkdir -p $SAVEDIR/ssrf/ssrfire
 # SSRFire will automatically add test url to callback
-$TOOLDIR/SSRFire/ssrfire.sh -d "$domain" -s "http://ssrf.h4x.fun/x/pqCLV" >> "$LOGDIR/ssrf/ssrfire/log.txt"
+$TOOLDIR/SSRFire/ssrfire.sh -d "$domain" -s "http://ssrf.h4x.fun/x/pqCLV" >> "$SAVEDIR/ssrf/ssrfire/log.txt"
 check "SSRFire"
-cp -r $TOOLDIR/SSRFire/output/$domain $LOGDIR/ssrf/ssrfire
+cp -r $TOOLDIR/SSRFire/output/$domain $SAVEDIR/ssrf/ssrfire
 check "Copy results ssrfire"
 
 ##############SQLi Check####################################
 # TODO add tamperscripts
 
 print "Make dir and run sqlmap"
-mkdir -p $LOGDIR/sqlmap/
-URLFILE="$LOGDIR/recon-$todate/wayback-data/waybackurls_clean.txt"
-python $TOOLDIR/sqlmap-dev/sqlmap.py --batch -m $URLFILE --random-agent -o --smart --results-file=$LOGDIR/sqlmap/results.csv
+mkdir -p $SAVEDIR/sqlmap/
+URLFILE="$SAVEDIR/recon-$todate/wayback-data/waybackurls_clean.txt"
+python $TOOLDIR/sqlmap-dev/sqlmap.py --batch -m $URLFILE --random-agent -o --smart --results-file=$SAVEDIR/sqlmap/results.csv
 check "Sqlmap"
 ########################################
 
