@@ -115,7 +115,7 @@ TOOLDIR="/root/Bug_Bounty/tools"
 RESDIR="/root/Bug_Bounty/reports/$domain"
 DNS_WORD_LIST=$TOOLDIR/wordlists/SecLists/Discovery/DNS/namelist.txt
 DIR_WORD_LIST=$TOOLDIR/wordlists/SecLists/Discovery/Web-Content/raft-medium-files-directories.txt
-TMPDIR="/root/Bug_Bounty/tmp"
+TMPDIR="/root/Bug_Bounty/tmp/$domain/"
 LOGS="$SAVEDIR/LOGS"
 LOGFILE="$LOGS/RR_log.txt"
 #----------------------
@@ -202,6 +202,16 @@ printf '%-15s %-8s %-35s %8s %15s\n' " " "######" "DEBUG is set to $DEBUGPRINT" 
 printf '%-10s %-67s %10s\n' " " "!############################################################!" " " | lolcat
 
 echo "RESDIR is: $RESDIR & TOOLDIR is: $TOOLDIR" | tee -a $LOGFILE
+
+# TODO Run lazyrecon first
+# TODO output to separate logfile
+# LazyRecon
+
+# Done in scan.sh
+# Send over to LazyRecon for further processing
+# print "LazyRecon"
+# $TOOLDIR/lazyrecon/lazyrecon.sh -d "$domain" | tee -a $LOGFILE
+# check "LazyRecon"
 
 echo -e "" | tee -a $LOGFILE
 echo -e "${BOLD}${GREEN}[+] STEP 1: Starting Subdomain Enumeration" | tee -a $LOGFILE
@@ -515,8 +525,10 @@ mkdir -p $SAVEDIR/ssrf/ssrfire
 # SSRFire will automatically add test url to callback
 $TOOLDIR/SSRFire/ssrfire.sh -d "$domain" -s "http://ssrf.h4x.fun/x/pqCLV" >> "$SAVEDIR/ssrf/ssrfire/log.txt"
 check "SSRFire"
-cp -r $TOOLDIR/SSRFire/output/$domain $SAVEDIR/ssrf/ssrfire
+cp -r $TOOLDIR/SSRFire/output/$domain/* $SAVEDIR/ssrf/ssrfire
 check "Copy results ssrfire"
+rm -rf $TOOLDIR/SSRFire/output/$domain
+check "Remove results ssrfire in tooldir"
 
 ##############SQLi Check####################################
 # TODO add tamperscripts
@@ -524,20 +536,8 @@ check "Copy results ssrfire"
 print "Make dir and run sqlmap"
 mkdir -p $SAVEDIR/sqlmap/
 URLFILE="$SAVEDIR/recon-$todate/wayback-data/waybackurls_clean.txt"
-python $TOOLDIR/sqlmap-dev/sqlmap.py --batch -m $URLFILE --random-agent -o --smart --results-file=$SAVEDIR/sqlmap/results.csv
+python $TOOLDIR/sqlmap-dev/sqlmap.py --batch -m $URLFILE --random-agent -o --smart --results-file=$SAVEDIR/sqlmap/results.csv >> $SAVEDIR/sqlmap/sqlmap_log.txt
 check "Sqlmap"
 ########################################
 
-# LazyRecon
-
-# Done in scan.sh
-# Send over to LazyRecon for further processing
-# print "LazyRecon"
-# $TOOLDIR/lazyrecon/lazyrecon.sh -d "$domain" | tee -a $LOGFILE
-# check "LazyRecon"
-
-print "Remove temporary dir"
-# TODO Re-enable
-# rm -rf "$TMPDIR"
-check "remove temporary dir"
 
