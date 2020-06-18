@@ -260,6 +260,10 @@ sort -u "$SAVEDIR/domains.txt" -o "$SAVEDIR/domains.txt"
 print "Removing out of scope domains"
 python3 "$TOOLDIR/RR/support/scope/out_of_scope.py" "$domain" "$SAVEDIR/domains.txt"
 check "Remove out of scope domains"
+print "move old results and use new"
+cp "$SAVEDIR/domains.txt" "$SAVEDIR/domains_full.txt"
+mv -f "$SAVEDIR/domains.txt_new" "$SAVEDIR/domains.txt"
+check "Overwrite results file with new data"
 
 #Discovering alive domains
 echo -e ""
