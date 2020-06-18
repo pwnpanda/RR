@@ -115,7 +115,7 @@ TOOLDIR="/root/Bug_Bounty/tools"
 RESDIR="/root/Bug_Bounty/reports/$domain"
 DNS_WORD_LIST=$TOOLDIR/wordlists/SecLists/Discovery/DNS/namelist.txt
 DIR_WORD_LIST=$TOOLDIR/wordlists/SecLists/Discovery/Web-Content/raft-medium-files-directories.txt
-TMPDIR="/root/Bug_Bounty/tmp/$domain/"
+TMPDIR="/root/Bug_Bounty/tmp/$domain"
 LOGS="$SAVEDIR/LOGS"
 LOGFILE="$LOGS/RR_log.txt"
 #----------------------
@@ -222,7 +222,7 @@ print "Starting Amass"
 amass enum -norecursive -noalts -d "$domain" -o "$TMPDIR/domains.txt"
 check "Amass"
 # Moving results due to weird amass behaviour
-print "Moving results"
+amass enum -norecursive -noalts -dprint "Moving results"
 cp "$TMPDIR/domains.txt" "$SAVEDIR/domains.txt"
 check "Move Amass results"
 
@@ -255,6 +255,11 @@ check "Subjack"
 
 #Removing duplicate entries
 sort -u "$SAVEDIR/domains.txt" -o "$SAVEDIR/domains.txt"
+
+#Removing out of scope domains
+print "Removing out of scope domains"
+python3 "$TOOLDIR/RR/support/scope/out_of_scope.py" "$domain" "$SAVEDIR/domains.txt"
+check "Remove out of scope domains"
 
 #Discovering alive domains
 echo -e ""
@@ -492,8 +497,23 @@ wait
 # check "Remove date folder"
 
 ##############Request Smuggling check#######################
-# Todo implement - is easy
-
+# Scan all alive hosts
+print "Check request smuggling"
+mkdir -p $SAVEDIR/smuggling
+run=0
+for entry in $(cat "$SAVEDIR/alive.txt" | sort | uniq ); do
+    ((run++))
+    python $TOOLDIR/smuggler/smuggler.py -u $domain -l $SAVEDIR/smuggling/$domain_logfile.txt &
+    check "Request smuggling"
+    if [ $run -gt 10 ]
+        then
+            print "Hit 10 concurrent scans - waiting to not run out of memory"
+            run=0
+            wait
+    fi
+done
+print "Waiting for all background processes to finish!"
+wait
 ########################################
 
 #################XSStrike####################################
