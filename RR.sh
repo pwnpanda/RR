@@ -116,7 +116,7 @@ RESDIR="/root/Bug_Bounty/reports/$domain"
 DNS_WORD_LIST=$TOOLDIR/wordlists/SecLists/Discovery/DNS/namelist.txt
 DIR_WORD_LIST=$TOOLDIR/wordlists/SecLists/Discovery/Web-Content/raft-medium-files-directories.txt
 TMPDIR="/root/Bug_Bounty/tmp/$domain"
-LOGS="$SAVEDIR/LOGS"
+LOGS="$SAVEDIR/logs"
 LOGFILE="$LOGS/RR_log.txt"
 #----------------------
 
@@ -456,15 +456,16 @@ NMAP_DIR="$SAVEDIR/nmap"
 mkdir -p "$NMAP_DIR"
 
 # nmap all hosts
+# Need to make nmap less intrusive on all hosts?
 # nmapHost                                      #target url #Output dir
 run=0
 for entry in $(cat "$SAVEDIR/domains.txt" | sort | uniq ); do
     ((run++))
     $TOOLDIR/RR/support/nmapHost.sh $entry $NMAP_DIR $TMPDIR &
     check "NMAP as background task"
-    if [ $run -gt 15 ]
+    if [ $run -gt 10 ]
     then
-        print "Hit 15 concurrent scans - waiting to not run out of memory"
+        print "Hit 10 concurrent scans - waiting to not run out of memory"
         run=0
         wait
     fi
@@ -480,25 +481,6 @@ wait
 print "Waiting for all background processes to finish!"
 wait
 
-# Needs to be done AFTER lazyrecon...
-# print "Move results to output folder"
-# SAVEDIR="/var/www/h4x.fun/reports/$domain/$todate"
-# RESDIR="/root/Bug_Bounty/reports/$domain"
-# cp -R $SAVEDIR/* $RESDIR
-# check "Move results to output folder"
-
-# print "Remove screenshots from git repo"
-# rm -rf "$RESDIR/screenshots"
-# check "Removed screenshots from output"
-
-#print "Move all files out of date-folder"
-# TODO needs troubleshooting and verification!
-# TODO investigate!
-# /bin/cp -rf $RESDIR/recon-$todate/* $RESDIR
-# check "Move files out of date-folder"
-# printf "Remove date folder"
-# rm -rf "$RESDIR/recon-$todate"
-# check "Remove date folder"
 
 ##############Request Smuggling check#######################
 # Scan all alive hosts
@@ -526,7 +508,9 @@ wait
 ########################################
 
 #########Check for Open Redirects or SSRFs#################
-# TODO Check with gf & gf-patterns
+# Check with gf & gf-patterns
+# TODO
+# Done in scan.sh - Use data here!
 
 # echo all domains
 # run against ssrf_OR_Identifier.sh
@@ -547,7 +531,10 @@ done
 print "SSRFire"
 mkdir -p $SAVEDIR/ssrf/ssrfire
 # SSRFire will automatically add test url to callback
-$TOOLDIR/SSRFire/ssrfire.sh -d "$domain" -s "http://ssrf.h4x.fun/x/pqCLV" >> "$SAVEDIR/ssrf/ssrfire/log.txt"
+# TODO check data generated from ssrfire
+# Disabled for now
+# May want to use cleaned list
+#$TOOLDIR/SSRFire/ssrfire.sh -d "$domain" -s "http://ssrf.h4x.fun/x/pqCLV" >> "$SAVEDIR/ssrf/ssrfire/log.txt"
 check "SSRFire"
 cp -r $TOOLDIR/SSRFire/output/$domain/* $SAVEDIR/ssrf/ssrfire
 check "Copy results ssrfire"
@@ -557,8 +544,12 @@ check "Remove results ssrfire in tooldir"
 ##############SQLi Check####################################
 # TODO add tamperscripts
 
+# TODO check data generated with sqlmap
+# Disabled for now
 print "Make dir and run sqlmap"
 mkdir -p $SAVEDIR/sqlmap/
+# Change to SQLI file!
+# TODO
 URLFILE="$SAVEDIR/recon-$todate/wayback-data/waybackurls_clean.txt"
 python $TOOLDIR/sqlmap-dev/sqlmap.py --batch -m $URLFILE --random-agent -o --smart --results-file=$SAVEDIR/sqlmap/results.csv >> $SAVEDIR/sqlmap/sqlmap_log.txt
 check "Sqlmap"
