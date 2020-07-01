@@ -272,7 +272,8 @@ print " Checking for alive domains.."
 cat "$SAVEDIR/domains.txt" | httprobe -c 50 -t 3000 | tee -a "$SAVEDIR/alive.txt"
 check "Alive domains with HTTProbe"
 
-sort "$SAVEDIR/alive.txt" | uniq -u
+sort "$SAVEDIR/alive.txt" | uniq > "$SAVEDIR/alive.txt_2"
+mv "$SAVEDIR/alive.txt_2" "$SAVEDIR/alive.txt"
 
 #Corsy
 echo -e ""
@@ -358,9 +359,9 @@ check "Created JS folders"
 # get all responses of script data
 ls "$BODIES/" > "$TMPDIR/files.txt"
 check "Get list of files with web page content"
-# getResponses                                      #Base path #Filename #Output data #Output urls
+# getResponses                                      #Base path #Filename #Output data #Output urls #Logdir
 for entry in $(cat "$TMPDIR/files.txt" | sort | uniq ); do
-    $TOOLDIR/RR/support/getResponses.sh $BODIES $entry $SCRIPT_DATA $SCRIPT_URL &
+    $TOOLDIR/RR/support/getResponses.sh $BODIES $entry $SCRIPT_DATA $SCRIPT_URL $LOGS &
 done
 check "Extracting scripts URLs from webpage and store contents"
 #COMMAND="$TOOLDIR/RR/support/getResponses.sh $BODIES _target_ $SCRIPT_DATA $SCRIPT_URL"
@@ -380,9 +381,9 @@ check "Create dir for extracted endpoints"
 
 # Extractor script
 EXTRACTOR="$TOOLDIR/relative-url-extractor/extract.rb"
-# getURL                                         #Basepath   #Folder    #script   #output path
+# getURL                                         #Basepath   #Folder    #script   #outputpath #logdir
 for entry in $(cat "$TMPDIR/files2.txt" | sort | uniq ); do
-    $TOOLDIR/RR/support/getURL.sh $SCRIPT_DATA $entry $EXTRACTOR $JS_ENDPOINTS/$entry $TMPDIR &
+    $TOOLDIR/RR/support/getURL.sh $SCRIPT_DATA $entry $EXTRACTOR $JS_ENDPOINTS/$entry $LOGDIR &
 done
 #COMMAND="$TOOLDIR/RR/support/getURL.sh $SCRIPT_DATA _target_ $EXTRACTOR $JS_ENDPOINTS/_target_ $TMPDIR"
 #interlace --silent -tL $SAVEDIR/tmp/files2.txt -threads $INTERTHREADS -c "$COMMAND"
@@ -402,9 +403,9 @@ print "Making directory for javascript"
 JSEARCH_DIR="$SAVEDIR/jsearch"
 mkdir -p "$JSEARCH_DIR"
 
-# getJS                                        #domain     #Tool                      #Organization     #Output folder
+# getJS                                        #domain     #Tool    #Organization     #Output folder #logdir
 for entry in $(cat "$SAVEDIR/alive.txt" | sort | uniq ); do
-    $TOOLDIR/RR/support/getJS.sh $entry $TOOLDIR/jsearch/jsearch.py $organitzationName $JSEARCH_DIR &
+    $TOOLDIR/RR/support/getJS.sh $entry $TOOLDIR/jsearch/jsearch.py $organitzationName $JSEARCH_DIR $LOGDIR &
 done
 #COMMAND="$TOOLDIR/RR/support/getJS.sh _target_ $TOOLDIR/jsearch/jsearch.py $organitzationName $JSEARCH_DIR"
 #interlace --silent -tL $SAVEDIR/alive.txt -threads $INTERTHREADS -c "$COMMAND"
@@ -522,7 +523,7 @@ mkdir -p $SAVEDIR/ssrf
 
 # check using script from Twitter
 for entry in $(cat "$SAVEDIR/all_domains.txt"); do
-    $TOOLDIR/RR/support/ssrf_OR_Identifier.sh "$entry" "http://ssrf.h4x.fun/x/pqCLV?$entry" "$SAVEDIR/ssrf" "$TMPDIR"
+    $TOOLDIR/RR/support/ssrf_OR_Identifier.sh "$entry" "http://ssrf.h4x.fun/x/pqCLV?$entry" "$SAVEDIR/ssrf" "$TMPDIR" $LOGDIR
     check "SSRF / OR identifier for $entry"
 done
 
