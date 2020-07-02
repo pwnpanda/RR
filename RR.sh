@@ -233,7 +233,7 @@ check "Certsh"
 
 #Github-Search
 print "Github-subdomains.py"
-python3 "$TOOLDIR/github-search/github-subdomains.py" -d "$domain" -t "$githubToken" | tee -a "$SAVEDIR/domains.txt"
+python3 "$TOOLDIR/github-search/github-subdomains.py" -d "$domain" -t "$githubToken" >> "$SAVEDIR/domains.txt"
 check "Github-subdomains.py"
 
 #Gobuster
@@ -245,7 +245,7 @@ rm "$SAVEDIR/gobusterDomains.txt"
 
 # Assetfinder
 print "Assetfinder"
-assetfinder --subs-only "$domain" | tee -a "$SAVEDIR/domains.txt"
+assetfinder --subs-only "$domain" >> "$SAVEDIR/domains.txt"
 check "Assetfinder"
 
 # Subjack
@@ -269,7 +269,7 @@ check "Overwrite results file with new data"
 echo -e ""
 print " Checking for alive domains.."
 # shellcheck disable=SC2002
-cat "$SAVEDIR/domains.txt" | httprobe -c 50 -t 3000 | tee -a "$SAVEDIR/alive.txt"
+cat "$SAVEDIR/domains.txt" | httprobe -c 50 -t 3000 >> "$SAVEDIR/alive.txt"
 check "Alive domains with HTTProbe"
 
 sort "$SAVEDIR/alive.txt" | uniq > "$SAVEDIR/alive.txt_2"
@@ -291,7 +291,7 @@ check "mkdir screenshots"
 
 print "Screenshotting with EyeWitness"
 # Not needed --prepend-https adds http(S)//: to all URLS without it
-$TOOLDIR/EyeWitness/Python/EyeWitness.py --web -f $SAVEDIR/alive.txt -d $SCREENSHOTS --no-prompt --results 1
+$TOOLDIR/EyeWitness/Python/EyeWitness.py --web -f $SAVEDIR/alive.txt -d $SCREENSHOTS --no-prompt --results 1 >> "$LOGS/eyewitness.log"
 check "Eyewitness"
 
 #cat "$SAVEDIR/alive.txt" | aquatone -screenshot-timeout "$aquatoneTimeout" -out "$SAVEDIR/screenshots/"
@@ -403,10 +403,19 @@ print "Making directory for javascript"
 JSEARCH_DIR="$SAVEDIR/jsearch"
 mkdir -p "$JSEARCH_DIR"
 
+run=0
 # getJS                                        #domain     #Tool    #Organization     #Output folder #logdir
 for entry in $(cat "$SAVEDIR/alive.txt" | sort | uniq ); do
+    ((run++))
     $TOOLDIR/RR/support/getJS.sh $entry $TOOLDIR/jsearch/jsearch.py $organitzationName $JSEARCH_DIR $LOGDIR &
+    if [ $run -gt 10 ]; then
+        print "Hit 10 concurrent scans - waiting to not run out of memory"
+        run=0
+        wait
+    fi
 done
+print "Waiting for last getJS execution"
+wait
 #COMMAND="$TOOLDIR/RR/support/getJS.sh _target_ $TOOLDIR/jsearch/jsearch.py $organitzationName $JSEARCH_DIR"
 #interlace --silent -tL $SAVEDIR/alive.txt -threads $INTERTHREADS -c "$COMMAND"
 # Output is all files related to the organization name from the current domain
