@@ -250,8 +250,14 @@ check "Assetfinder"
 
 # Subjack
 print "Subjack for search subdomains takeover"
-subjack -w "$SAVEDIR/domains.txt" -t "$subjackThreads" -timeout "$subjackTime" -ssl -c "/root/go/src/github.com/haccer/subjack/fingerprints.json" -v 3 | tee -a "$SAVEDIR/subjack.txt"
+subjack -w "$SAVEDIR/domains.txt" -t "$subjackThreads" -timeout "$subjackTime" -ssl -c "/root/go/src/github.com/haccer/subjack/fingerprints.json" -v 3 >> "$SAVEDIR/subjack.txt"
 check "Subjack"
+cat "$SAVEDIR/subjack.txt" | grep -v "[Not Vulnerable]" >> "$SAVEDIR/subjack_vuln.txt"
+lines=$(wc -l "$SAVEDIR/subjack_vuln.txt")
+if [ $line -gt 0];
+then
+    python3 /root/slackboth/alert.py "Subdomain vulnerable to hijacking! Check $SAVEDIR/subjack_vuln.txt"
+fi
 
 #Removing duplicate entries
 sort -u "$SAVEDIR/domains.txt" -o "$SAVEDIR/domains.txt"
