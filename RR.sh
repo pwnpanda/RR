@@ -268,7 +268,7 @@ python3 "$TOOLDIR/RR/support/scope/out_of_scope.py" "$domain" "$SAVEDIR/domains.
 check "Remove out of scope domains"
 print "move old results and use new"
 cp "$SAVEDIR/domains.txt" "$SAVEDIR/domains_full.txt"
-mv -f "$SAVEDIR/domains.txt_new" "$SAVEDIR/domains.txt"
+mv -f "$SAVEDIR/domains_new.txt" "$SAVEDIR/domains.txt"
 check "Overwrite results file with new data"
 
 #Discovering alive domains
@@ -505,7 +505,7 @@ mkdir -p $SAVEDIR/smuggling
 run=0
 for entry in $(cat "$SAVEDIR/alive.txt" | sort | uniq ); do
     ((run++))
-    python $TOOLDIR/smuggler/smuggler.py -u $domain -l $SAVEDIR/smuggling/$domain_logfile.txt &
+    python3 $TOOLDIR/smuggler/smuggler.py -u $domain -l $SAVEDIR/smuggling/$domain_logfile.txt &
     check "Request smuggling"
     if [ $run -gt 10 ]
         then

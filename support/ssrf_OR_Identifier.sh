@@ -20,4 +20,9 @@ sed -i "s|$|\&dest=$2\&redirect=$2\&uri=$2\&path=$2\&continue=$2\&url=$2\&window
 python3 /root/Bug_Bounty/tools/cleanWaybackUrls/clean.py "$4/$1-ssrf-pl.txt"
 echo "Firing the requests - check your server for potential callbacks"
 python3 /root/Bug_Bounty/tools/RR/utility/ssrf_uniq.py "$4/$1-ssrf-pl.txt" "$1" "$3/$1-unique-pl.txt"
-ffuf -s -w "$3/$1-ssrf-pl.txt" -u FUZZ -t 50
+
+if [ -z "$3/$1-ssrf-pl.txt" ]; then
+    ffuf -s -w "$3/$1-unique-pl.txt" -u FUZZ -t 50
+else
+    echo "No payloads found for $1"
+fi
