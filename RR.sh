@@ -470,6 +470,7 @@ echo -e ""
 echo -e "${BOLD}${GREEN}[+]STEP 5: Starting NMAP Scan for alive domains" | tee -a $LOGFILE
 NMAP_DIR="$SAVEDIR/nmap"
 mkdir -p "$NMAP_DIR"
+mkdir -p "$LOGDIR/NMAP"
 
 # nmap all hosts
 # Need to make nmap less intrusive on all hosts?
@@ -477,7 +478,7 @@ mkdir -p "$NMAP_DIR"
 run=0
 for entry in $(cat "$SAVEDIR/domains.txt" | sort | uniq ); do
     ((run++))
-    $TOOLDIR/RR/support/nmapHost.sh $entry $NMAP_DIR $TMPDIR &
+    $TOOLDIR/RR/support/nmapHost.sh $entry $NMAP_DIR $TMPDIR "$LOGDIR/NMAP" &
     check "NMAP as background task"
     if [ $run -gt 10 ]
     then
@@ -542,7 +543,7 @@ mkdir -p $SAVEDIR/ssrf
 
 # check using script from Twitter
 for entry in $(cat "$SAVEDIR/all_domains.txt"); do
-    $TOOLDIR/RR/support/ssrf_OR_Identifier.sh "$entry" "http://ssrf.h4x.fun/x/pqCLV?$entry" "$SAVEDIR/ssrf" "$TMPDIR"
+    bash -c "BASH_ENV=/root/Bug_Bounty/tools/SSRFire/.profile $TOOLDIR/RR/support/ssrf_OR_Identifier.sh $entry http://ssrf.h4x.fun/x/pqCLV?$entry $SAVEDIR/ssrf $TMPDIR"
     check "SSRF / OR identifier for $entry"
 done
 
