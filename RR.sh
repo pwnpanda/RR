@@ -476,9 +476,12 @@ mkdir -p "$LOGDIR/NMAP"
 # Need to make nmap less intrusive on all hosts?
 # nmapHost                                      #target url #Output dir
 run=0
-for entry in $(cat "$SAVEDIR/domains.txt" | sort | uniq ); do
+for entry in $(cat "$SAVEDIR/recon-$todate/mass.txt" | sort | uniq ); do
+    domaindot=$(echo $entry | awk -F "" '{print $1}')
+    domain=${domaindot::-1}
+    ip=$(echo $entry | awk -F "" '{print $3}')
     ((run++))
-    $TOOLDIR/RR/support/nmapHost.sh $entry $NMAP_DIR $TMPDIR "$LOGDIR/NMAP" &
+    $TOOLDIR/RR/support/nmapHost.sh $domain $NMAP_DIR $TMPDIR "$LOGDIR/NMAP" $ip &
     check "NMAP as background task"
     if [ $run -gt 10 ]
     then
