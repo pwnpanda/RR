@@ -584,7 +584,7 @@ check "Remove results ssrfire in tooldir"
 # TODO check data generated with sqlmap
 print "Make dir and run sqlmap"
 mkdir -p $SAVEDIR/sqlmap/
-URLFILE="$SAVEDIR/$todate/targeted_lists/sqli.txt"
+URLFILE="$SAVEDIR/targeted_lists/sqli.txt"
 python $TOOLDIR/sqlmap-dev/sqlmap.py --batch -m $URLFILE --random-agent -o --smart --results-file=$SAVEDIR/sqlmap/results.csv >> $SAVEDIR/sqlmap/sqlmap_log.txt
 check "Sqlmap"
 ########################################
