@@ -14,6 +14,6 @@ NAME=$(echo "$1" | awk -F/ '{print $3}')
 ffuf -s -u "$1/FUZZ" -recursion -recursion-depth=1 -c -e '/','._','~','_','-','.','0','1','~1','.1','2','.2','.3','.aro','.asp','.aspx','.bac','.backup','.bak','.bat','~bk', '_backup', '.cache','.cfm','.cgi','.com','.conf', '.dif','.dist','.dll','.download','.err','.exe','.git','.gpg','.gz','.htm','.html','.inc','.ini','.java','.json','.jsp','.jvs','.key','.log','.lst','.map','.old','.orig','.ovpn','.part','.php','.phtml','.pl','.priv','.rsa','.sav','.save','.save.1','.sh','.shtml','.sql','.sublime-project','.sublime-workspace','..swm','..swn','..swo','..swp','.swp','.tar','.tar.gz','.temp','.templ','.tmp','.txt''.vi','.wadl','.xml','.zip','.go','.wasm','.rar','' -w "$2" -t "$3" -fs 0 -of html -o "$4/$NAME.html"  &>/dev/null
 
 if [ ! -s "$4/$NAME" ]; then
-  rm "$4/$NAME"
+  rm -rf "$4/$NAME" > /dev/null
   echo -e "${BOLD}${YELLOW}[?] No valid paths found for domain $1${RESET}"
 fi

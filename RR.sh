@@ -254,7 +254,7 @@ subjack -w "$SAVEDIR/domains.txt" -t "$subjackThreads" -timeout "$subjackTime" -
 check "Subjack"
 cat "$SAVEDIR/subjack.txt" | grep -v "[Not Vulnerable]" >> "$SAVEDIR/subjack_vuln.txt"
 lines=$(wc -l "$SAVEDIR/subjack_vuln.txt")
-if [ $line -gt 0];
+if [ $line -gt 0 ];
 then
     python3 /root/slackboth/alert.py "Subdomain vulnerable to hijacking! Check $SAVEDIR/subjack_vuln.txt"
 fi
@@ -264,12 +264,17 @@ sort -u "$SAVEDIR/domains.txt" -o "$SAVEDIR/domains.txt"
 
 #Removing out of scope domains
 print "Removing out of scope domains"
-python3 "$TOOLDIR/RR/support/scope/out_of_scope.py" "$domain" "$SAVEDIR/domains.txt"
+python3 "$TOOLDIR/RR/support/scope/out_of_scope.py" "$domain" "$SAVEDIR/domains.txt" > "$LOGDIR/out_of_scope.txt"
+res=$?
 check "Remove out of scope domains"
-print "move old results and use new"
-cp "$SAVEDIR/domains.txt" "$SAVEDIR/domains_full.txt"
-mv -f "$SAVEDIR/domains_new.txt" "$SAVEDIR/domains.txt"
-check "Overwrite results file with new data"
+# No data exists or was written for new domains, so skip overwriting!
+if [ $res -ne 0 ];
+    then
+    print "move old results and use new"
+    cp "$SAVEDIR/domains.txt" "$SAVEDIR/domains_full.txt"
+    mv -f "$SAVEDIR/domains.txt_new" "$SAVEDIR/domains.txt"
+    check "Overwrite results file with new data"
+fi
 
 #Discovering alive domains
 echo -e ""
@@ -445,7 +450,7 @@ mkdir -p "$FFUF_DIR"
 run=0
 for entry in $(cat "$SAVEDIR/alive.txt" | sort | uniq ); do
     ((run++))
-    $TOOLDIR/RR/support/ffufDir.sh $entry $DIR_WORD_LIST $FFUF_Threads $FFUF_DIR &
+    $TOOLDIR/RR/support/ffufDir.sh "$entry" "$DIR_WORD_LIST" "$FFUF_Threads" "$FFUF_DIR" &
     check "FFUF as background task $run"
     if [ $run -gt 3 ]
     then
@@ -481,7 +486,7 @@ for entry in $(cat "$SAVEDIR/recon-$todate/mass.txt" | sort | uniq ); do
     domain=${domaindot::-1}
     ip=$(echo $entry | awk -F "" '{print $3}')
     ((run++))
-    $TOOLDIR/RR/support/nmapHost.sh $domain $NMAP_DIR $TMPDIR "$LOGDIR/NMAP" $ip &
+    $TOOLDIR/RR/support/nmapHost.sh "$domain" "$NMAP_DIR" "$TMPDIR" "$LOGDIR/NMAP" "$ip" &
     check "NMAP as background task"
     if [ $run -gt 10 ]
     then
@@ -504,12 +509,21 @@ wait
 
 ##############Request Smuggling check#######################
 # Scan all alive hosts
+# TODO
+# OPTIONS -> Returns allowed endpoints
+# identify allowed http verbs
+# then test with all verbs
+# Test all endpoints? Seems like too much traffic
+
 print "Check request smuggling"
 mkdir -p $SAVEDIR/smuggling
 run=0
 for entry in $(cat "$SAVEDIR/alive.txt" | sort | uniq ); do
     ((run++))
-    python3 $TOOLDIR/smuggler/smuggler.py -u $domain -l $SAVEDIR/smuggling/$domain_logfile.txt &
+    python3 $TOOLDIR/smuggler/smuggler.py -m POST -u "$entry" -l "$SAVEDIR/smuggling/$entry-logfile.txt" &
+    python3 $TOOLDIR/smuggler/smuggler.py -m GET -u "$entry" -l "$SAVEDIR/smuggling/$entry-logfile.txt" &
+    python3 $TOOLDIR/smuggler/smuggler.py -m PUT -u "$entry" -l "$SAVEDIR/smuggling/$entry-logfile.txt" &
+    python3 $TOOLDIR/smuggler/smuggler.py -m DELETE -u "$entry" -l "$SAVEDIR/smuggling/$entry-logfile.txt" &
     check "Request smuggling"
     if [ $run -gt 10 ]
         then
@@ -543,10 +557,11 @@ cat "$SAVEDIR/domains.txt" >> "$TMPDIR/all_domains.txt"
 cat "$SAVEDIR/recon-$todate/alldomains.txt" >> "$TMPDIR/all_domains.txt"
 cat "$TMPDIR/all_domains.txt" | sort | uniq >> "$SAVEDIR/all_domains.txt"
 mkdir -p $SAVEDIR/ssrf
+mkdir -p "$LOGDIR/ssrf"
 
 # check using script from Twitter
 for entry in $(cat "$SAVEDIR/all_domains.txt"); do
-    bash -c "BASH_ENV=/root/Bug_Bounty/tools/SSRFire/.profile $TOOLDIR/RR/support/ssrf_OR_Identifier.sh $entry http://ssrf.h4x.fun/x/pqCLV?$entry $SAVEDIR/ssrf $TMPDIR"
+    bash -c "BASH_ENV=/root/Bug_Bounty/tools/SSRFire/.profile $TOOLDIR/RR/support/ssrf_OR_Identifier.sh "$entry" "http://ssrf.h4x.fun/x/pqCLV?$entry" "$SAVEDIR/ssrf" $TMPDIR" "$LOGDIR/ssrf"
     check "SSRF / OR identifier for $entry"
 done
 

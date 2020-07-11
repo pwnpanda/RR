@@ -11,7 +11,7 @@ if len(sys.argv) < 3:
 # Check if file exists
 if not path.exists(sys.argv[1]):
     print("File does not exists - test all urls")
-    exit(0)
+    exit(-1)
 
 # Extract out of scope regexes
 deny = []
@@ -48,6 +48,8 @@ scan = list(set(res) - set(remove_all))
 #print(F"Output {scan}")
 
 # Write new file with correct data
-with open(sys.argv[2]+"_new", "w+") as f:
+outname = sys.argv[2]+"_new"
+print(F"Outfile: {outname}")
+with open(outname, "w+") as f:
     f.write("\n".join(scan))
 

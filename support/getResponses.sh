@@ -21,6 +21,7 @@ for end_point in $END_POINTS; do
     URL="https://$NAME$end_point"
   fi
   file=$(basename "$end_point")
-  curl -s -X GET "$URL" -L > "$3/$NAME/$file"
+  fileout=$(echo "$file" | cut -c1-40)
+  curl -s -X GET "$URL" -L > "$3/$NAME/$fileout"
   echo "$URL" >>"$4/$2"
 done

@@ -36,10 +36,12 @@ else:
 with open(outfile, "w+") as fi:
     fi.write(newfile)
 
-import subprocess
-cmd = "ffuf -s -w "+outfile+" -u FUZZ -t 50"
-proc = subprocess.Popen(cmd.split(), stdout=subprocess.PIPE)
-output, error = proc.communicate()
+#import subprocess
+#cmd = "ffuf -s -w "+outfile+" -u FUZZ -t 50"
+#proc = subprocess.Popen(cmd.split(), stdout=subprocess.PIPE)
+#output, error = proc.communicate()
 #print(F"Out {output}\n")
-if error:
-    print(F"Error {error}")
+#if error:
+#    print(F"Error {error}")
+#else:
+#    print(F"SSRF Scan for {} completed successfully")
