@@ -284,7 +284,7 @@ cat "$SAVEDIR/domains.txt" | httprobe -c 50 -t 3000 >> "$SAVEDIR/alive.txt"
 check "Alive domains with HTTProbe"
 
 sort "$SAVEDIR/alive.txt" | uniq > "$SAVEDIR/alive.txt_2"
-mv "$SAVEDIR/alive.txt_2" "$SAVEDIR/alive.txt"
+mv -f "$SAVEDIR/alive.txt_2" "$SAVEDIR/alive.txt"
 
 #Corsy
 echo -e ""
