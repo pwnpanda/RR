@@ -10,11 +10,11 @@ if [ -z "$2" ]; then
   echo >&2 "ERROR: Sever link not set"
   exit 2
 fi
-echo "Getting WaybackURLS"
+echo "Getting WaybackURLS" >> "$5/$1_ssrf.log"
 waybackurls $1 > "$4/$1-ssrf.txt"
-echo "Getting URLS with GAU"
+echo "Getting URLS with GAU" >> "$5/$1_ssrf.log"
 gau $1 >> "$4/$1-ssrf.txt"
-echo "Putting them all together.."
+echo "Putting them all together.." >> "$5/$1_ssrf.log"
 cat "$4/$1-ssrf.txt" | sort | uniq | grep "?" | qsreplace -a | qsreplace $2 > "$4/$1-ssrf-pl.txt"
 sed -i "s|$|\&dest=$2\&redirect=$2\&uri=$2\&path=$2\&continue=$2\&url=$2\&window=$2\&next=$2\&data=$2\&reference=$2\&site=$2\&html=$2\&val=$2\&validate=$2\&domain=$2\&callback=$2\&return=$2\&page=$2\&feed=$2\&host=$2\&port=$2\&to=$2\&out=$2\&view=$2\&dir=$2\&show=$2\&navigation=$2\&open=$2|g" "$4/$1-ssrf-pl.txt"
 #python3 /root/Bug_Bounty/tools/cleanWaybackUrls/clean.py "$4/$1-ssrf-pl.txt"
@@ -24,6 +24,6 @@ python3 /root/Bug_Bounty/tools/RR/utility/ssrf_uniq.py "$4/$1-ssrf-pl.txt" "$1" 
 if [ -z "$3/$1-unique-pl.txt" ]; then
     ffuf -s -w "$3/$1-unique-pl.txt" -u FUZZ -t 50
 else
-    echo "No payloads found for $1"
+    echo "No payloads found for $1" | tee -a "$5/$1_ssrf.log"
     rm -rf "$3/$1-unique-pl.txt"
 fi
