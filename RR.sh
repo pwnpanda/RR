@@ -516,7 +516,7 @@ for entry in $(cat "$SAVEDIR/recon-$todate/mass.txt" | sort | uniq ); do
 	fi
 
 	((run++))
-	if [[ $ip -ne "" ]];
+	if [[ ! -z "$ip" ]];
 		then
 		$TOOLDIR/RR/support/nmapHost.sh "$domain" "$NMAP_DIR" "$TMPDIR" "$LOGS/NMAP" "$ip" &
 		check "NMAP as background task"
