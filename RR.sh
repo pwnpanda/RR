@@ -489,31 +489,31 @@ mkdir -p "$LOGS/NMAP"
 # nmapHost                                      #target url #Output dir
 run=0
 # Set newline to be separator
-IFS=" "
+# IFS=" "
 OIFS=$IFS
 IFS="
 "
 for entry in $(cat "$SAVEDIR/recon-$todate/mass.txt" | sort | uniq ); do
 	#echo $entry
 	domaindot=$(echo $entry | awk -F " " '{print $1}')
-▸   domain=${domaindot::-1}
-▸   #echo "domaindot: $domaindot domain : $domain"
-▸   dnstype=$(echo $entry | awk -F " " '{print $2}')·
+	domain=${domaindot::-1}
+	#echo "domaindot: $domaindot domain : $domain"
+	dnstype=$(echo $entry | awk -F " " '{print $2}')·
 	#echo "DNSTYPE: $dnstype"
 	ip=""
 	if [[ $dnstype == "CNAME" ]];
-▸   ▸   then
-▸   ▸   name=$(echo $entry | awk -F " " '{print $3}')
-▸   ▸   ipall=$(host $name | grep -oE "\b([0-9]{1,3}\.){3}[0-9]{1,3}\b")
-▸   ▸   ip=$(echo $ipall | awk -F " " '{print $1}')
+		then
+		name=$(echo $entry | awk -F " " '{print $3}')
+		ipall=$(host $name | grep -oE "\b([0-9]{1,3}\.){3}[0-9]{1,3}\b")
+		ip=$(echo $ipall | awk -F " " '{print $1}')
 		#echo "IP: $ip"
-▸   elif [[ $dnstype == "A" ]];
-▸   ▸   then
-▸   ▸   ip=$(echo $entry | awk -F " " '{print $3}')
+	elif [[ $dnstype == "A" ]];
+		then
+		ip=$(echo $entry | awk -F " " '{print $3}')
 		#echo "IP: $ip"
-▸   else
-▸   ▸   echo "Unknown record type: $dnstype for entry $entry" | tee -a "$LOGS/NMAP/unknown_dns.txt"
-▸   fi
+	else
+		echo "Unknown record type: $dnstype for entry $entry" | tee -a "$LOGS/NMAP/unknown_dns.txt"
+	fi
 
 	((run++))
 	if [[ $ip -ne "" ]];
