@@ -69,7 +69,7 @@ usage() {
 # Check that there is a domain supplied
 if [ $# -lt 2 ]
   then
-    usage
+	usage
 fi
 
 set=0
@@ -77,31 +77,31 @@ set=0
 while getopts ":u:d:l:t:c:" o; do
   case "${o}" in
   u)
-    domain=${OPTARG}
-    SAVEDIR="/var/www/h4x.fun/reports/$domain/$todate"
-    ;;
+	domain=${OPTARG}
+	SAVEDIR="/var/www/h4x.fun/reports/$domain/$todate"
+	;;
   l)
-    SAVEDIR=${OPTARG}
-    set=1
+	SAVEDIR=${OPTARG}
+	set=1
   ;;
   d)
-    DEBUG=
+	DEBUG=
   ;;
   c)
-    INTERTHREADS=${OPTARG}
+	INTERTHREADS=${OPTARG}
   ;;
   t)
-    todate=${OPTARG}
-    if [[ "$set" -eq 0 ]]; then
-        SAVEDIR="/var/www/h4x.fun/reports/$domain/$todate"
-    else
-        SAVEDIR=$(echo $SAVEDIR | sed 's:/*$::')
-        SAVEDIR="$SAVEDIR/$todate"
-    fi
-    ;;
+	todate=${OPTARG}
+	if [[ "$set" -eq 0 ]]; then
+		SAVEDIR="/var/www/h4x.fun/reports/$domain/$todate"
+	else
+		SAVEDIR=$(echo $SAVEDIR | sed 's:/*$::')
+		SAVEDIR="$SAVEDIR/$todate"
+	fi
+	;;
   *)
-    usage
-    ;;
+	usage
+	;;
   esac
 done
 shift $((OPTIND-1))
@@ -146,16 +146,16 @@ printE() {
 CMD=0
 check() {
   if [[ $? == 0 ]]; then
-    print "[$((CMD += 1))]${TURQ} $1 executed successfully!"
+	print "[$((CMD += 1))]${TURQ} $1 executed successfully!"
   else
-    printE "[$((CMD += 1))] $1 encountered an error!"
+	printE "[$((CMD += 1))] $1 encountered an error!"
   fi
 
   # Debugging
   if [ -z "$DEBUG" ];
   then
-    echo -e "\n"
-    read -p "Press enter to continue"
+	echo -e "\n"
+	read -p "Press enter to continue"
   fi
 }
 ####################################
@@ -256,7 +256,7 @@ cat "$SAVEDIR/subjack.txt" | grep -v "[Not Vulnerable]" >> "$SAVEDIR/subjack_vul
 lines=$(wc -l "$SAVEDIR/subjack_vuln.txt")
 if [ $lines -gt 0 ];
 then
-    python3 /root/slackboth/alert.py "Subdomain vulnerable to hijacking! Check $SAVEDIR/subjack_vuln.txt"
+	python3 /root/slackboth/alert.py "Subdomain vulnerable to hijacking! Check $SAVEDIR/subjack_vuln.txt"
 fi
 
 #Removing duplicate entries
@@ -272,10 +272,10 @@ res=$?
 check "Remove out of scope domains"
 # No data exists or was written for new domains, so skip overwriting!
 if [ $res -ne 0 ];
-    then
-    print "move old results and use new"
-    mv -f "$SAVEDIR/domains.txt_new" "$SAVEDIR/domains.txt"
-    check "Overwrite results file with new data"
+	then
+	print "move old results and use new"
+	mv -f "$SAVEDIR/domains.txt_new" "$SAVEDIR/domains.txt"
+	check "Overwrite results file with new data"
 fi
 
 # Create file with all gathered domains from LazyRecon & RR
@@ -344,7 +344,7 @@ print "Gather website_data and responses"
 touch "$SAVEDIR/unresponsive.txt"
 # extractHeadBody                                         #URL    #Output base folder
 for entry in $(cat "$SAVEDIR/alive.txt"); do
-    $TOOLDIR/RR/support/extractHeadBody.sh $entry $WEBSITE_DATA &
+	$TOOLDIR/RR/support/extractHeadBody.sh $entry $WEBSITE_DATA &
 done
 #printW "DEBUG: $SAVEDIR/alive.txt lines: $(cat $SAVEDIR/alive.txt | wc -l)"
 #COMMAND="$TOOLDIR/RR/support/extractHeadBody.sh _target_ $WEBSITE_DATA"
@@ -379,7 +379,7 @@ ls "$BODIES/" > "$TMPDIR/files.txt"
 check "Get list of files with web page content"
 # getResponses                                      #Base path #Filename #Output data #Output urls #Logdir
 for entry in $(cat "$TMPDIR/files.txt" | sort | uniq ); do
-    $TOOLDIR/RR/support/getResponses.sh $BODIES $entry $SCRIPT_DATA $SCRIPT_URL $LOGS &
+	$TOOLDIR/RR/support/getResponses.sh $BODIES $entry $SCRIPT_DATA $SCRIPT_URL $LOGS &
 done
 check "Extracting scripts URLs from webpage and store contents"
 #COMMAND="$TOOLDIR/RR/support/getResponses.sh $BODIES _target_ $SCRIPT_DATA $SCRIPT_URL"
@@ -401,7 +401,7 @@ check "Create dir for extracted endpoints"
 EXTRACTOR="$TOOLDIR/relative-url-extractor/extract.rb"
 # getURL                                         #Basepath   #Folder    #script   #outputpath #logdir
 for entry in $(cat "$TMPDIR/files2.txt" | sort | uniq ); do
-    $TOOLDIR/RR/support/getURL.sh $SCRIPT_DATA $entry $EXTRACTOR $JS_ENDPOINTS/$entry $LOGS &
+	$TOOLDIR/RR/support/getURL.sh $SCRIPT_DATA $entry $EXTRACTOR $JS_ENDPOINTS/$entry $LOGS &
 done
 #COMMAND="$TOOLDIR/RR/support/getURL.sh $SCRIPT_DATA _target_ $EXTRACTOR $JS_ENDPOINTS/_target_ $TMPDIR"
 #interlace --silent -tL $SAVEDIR/tmp/files2.txt -threads $INTERTHREADS -c "$COMMAND"
@@ -424,13 +424,13 @@ mkdir -p "$JSEARCH_DIR"
 run=0
 # getJS                                        #domain     #Tool    #Organization     #Output folder #logdir
 for entry in $(cat "$SAVEDIR/alive.txt" | sort | uniq ); do
-    ((run++))
-    $TOOLDIR/RR/support/getJS.sh $entry $TOOLDIR/jsearch/jsearch.py $organitzationName $JSEARCH_DIR $LOGS &
-    if [ $run -gt 10 ]; then
-        print "Hit 10 concurrent scans - waiting to not run out of memory"
-        run=0
-        wait
-    fi
+	((run++))
+	$TOOLDIR/RR/support/getJS.sh $entry $TOOLDIR/jsearch/jsearch.py $organitzationName $JSEARCH_DIR $LOGS &
+	if [ $run -gt 10 ]; then
+		print "Hit 10 concurrent scans - waiting to not run out of memory"
+		run=0
+		wait
+	fi
 done
 print "Waiting for last getJS execution"
 wait
@@ -456,15 +456,15 @@ mkdir -p "$FFUF_DIR"
 # Slow version
 run=0
 for entry in $(cat "$SAVEDIR/alive.txt" | sort | uniq ); do
-    ((run++))
-    $TOOLDIR/RR/support/ffufDir.sh "$entry" "$DIR_WORD_LIST" "$FFUF_Threads" "$FFUF_DIR" &
-    check "FFUF as background task $run"
-    if [ $run -gt 3 ]
-    then
-        print "Hit 4 concurrent scans - waiting to not run out of memory"
-        run=0
-        wait
-    fi
+	((run++))
+	$TOOLDIR/RR/support/ffufDir.sh "$entry" "$DIR_WORD_LIST" "$FFUF_Threads" "$FFUF_DIR" &
+	check "FFUF as background task $run"
+	if [ $run -gt 3 ]
+	then
+		print "Hit 4 concurrent scans - waiting to not run out of memory"
+		run=0
+		wait
+	fi
 done
 print "Waiting for last ffuf scans"
 wait
@@ -495,27 +495,27 @@ IFS="
 "
 for entry in $(cat "$SAVEDIR/recon-$todate/mass.txt" | sort | uniq ); do
 	#echo $entry
-    domaindot=$(echo $entry | awk -F " " '{print $1}')
+	domaindot=$(echo $entry | awk -F " " '{print $1}')
 ▸   domain=${domaindot::-1}
 ▸   #echo "domaindot: $domaindot domain : $domain"
 ▸   dnstype=$(echo $entry | awk -F " " '{print $2}')·
-▸   #echo "DNSTYPE: $dnstype"
-    ip=""
-    if [[ $dnstype == "CNAME" ]];
+	#echo "DNSTYPE: $dnstype"
+	ip=""
+	if [[ $dnstype == "CNAME" ]];
 ▸   ▸   then
 ▸   ▸   name=$(echo $entry | awk -F " " '{print $3}')
 ▸   ▸   ipall=$(host $name | grep -oE "\b([0-9]{1,3}\.){3}[0-9]{1,3}\b")
 ▸   ▸   ip=$(echo $ipall | awk -F " " '{print $1}')
-        #echo "IP: $ip"
+		#echo "IP: $ip"
 ▸   elif [[ $dnstype == "A" ]];
 ▸   ▸   then
 ▸   ▸   ip=$(echo $entry | awk -F " " '{print $3}')
-        #echo "IP: $ip"
+		#echo "IP: $ip"
 ▸   else
 ▸   ▸   echo "Unknown record type: $dnstype for entry $entry" | tee -a "$LOGS/NMAP/unknown_dns.txt"
 ▸   fi
 
-    ((run++))
+	((run++))
 	if [[ $ip -ne "" ]];
 		then
 		$TOOLDIR/RR/support/nmapHost.sh "$domain" "$NMAP_DIR" "$TMPDIR" "$LOGS/NMAP" "$ip" &
@@ -556,18 +556,18 @@ echo "DEBUG MARK"
 echo $(ls -la $SAVEDIR/smuggling)
 run=0
 for entry in $(cat "$SAVEDIR/alive.txt" | sort | uniq ); do
-    ((run++))
-    python3 $TOOLDIR/smuggler/smuggler.py -m POST -u "$entry" -l "$SAVEDIR/smuggling/$entry-logfile.txt" &
-    python3 $TOOLDIR/smuggler/smuggler.py -m GET -u "$entry" -l "$SAVEDIR/smuggling/$entry-logfile.txt" &
-    python3 $TOOLDIR/smuggler/smuggler.py -m PUT -u "$entry" -l "$SAVEDIR/smuggling/$entry-logfile.txt" &
-    python3 $TOOLDIR/smuggler/smuggler.py -m DELETE -u "$entry" -l "$SAVEDIR/smuggling/$entry-logfile.txt" &
-    check "Request smuggling"
-    if [ $run -gt 10 ]
-        then
-            print "Hit 10 concurrent scans - waiting to not run out of memory"
-            run=0
-            wait
-    fi
+	((run++))
+	python3 $TOOLDIR/smuggler/smuggler.py -m POST -u "$entry" -l "$SAVEDIR/smuggling/$entry-logfile.txt" &
+	python3 $TOOLDIR/smuggler/smuggler.py -m GET -u "$entry" -l "$SAVEDIR/smuggling/$entry-logfile.txt" &
+	python3 $TOOLDIR/smuggler/smuggler.py -m PUT -u "$entry" -l "$SAVEDIR/smuggling/$entry-logfile.txt" &
+	python3 $TOOLDIR/smuggler/smuggler.py -m DELETE -u "$entry" -l "$SAVEDIR/smuggling/$entry-logfile.txt" &
+	check "Request smuggling"
+	if [ $run -gt 10 ]
+		then
+			print "Hit 10 concurrent scans - waiting to not run out of memory"
+			run=0
+			wait
+	fi
 done
 print "Waiting for all background processes to finish!"
 wait
@@ -595,8 +595,8 @@ mkdir -p "$LOGS/ssrf"
 
 # check using script from Twitter
 for entry in $(cat "$SAVEDIR/all_domains.txt"); do
-    $TOOLDIR/RR/support/ssrf_OR_Identifier.sh "$entry" "http://ssrf.h4x.fun/x/pqCLV?$entry" "$SAVEDIR/ssrf" "$TMPDIR" "$LOGS/ssrf"
-    check "SSRF / OR identifier for $entry"
+	$TOOLDIR/RR/support/ssrf_OR_Identifier.sh "$entry" "http://ssrf.h4x.fun/x/pqCLV?$entry" "$SAVEDIR/ssrf" "$TMPDIR" "$LOGS/ssrf"
+	check "SSRF / OR identifier for $entry"
 done
 
 # Check using SSRFire
