@@ -504,7 +504,8 @@ for entry in $(cat "$SAVEDIR/recon-$todate/mass.txt" | sort | uniq ); do
     if [[ $dnstype == "CNAME" ]];
 ▸   ▸   then
 ▸   ▸   name=$(echo $entry | awk -F " " '{print $3}')
-▸   ▸   ipall=$(host $name | grep -oE "\b([0-9]{1,3}\.){3}[0-9]{1,3}\b") ▸   ▸   ip=$(echo $ipall | awk -F " " '{print $1}')
+▸   ▸   ipall=$(host $name | grep -oE "\b([0-9]{1,3}\.){3}[0-9]{1,3}\b")
+▸   ▸   ip=$(echo $ipall | awk -F " " '{print $1}')
         #echo "IP: $ip"
 ▸   elif [[ $dnstype == "A" ]];
 ▸   ▸   then
