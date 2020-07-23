@@ -8,7 +8,7 @@
 echo "Running nmapHost.sh with following parameters:" >> "$4/$1_log.txt"
 echo "Target $1, Out dir $2, Temp dir $3, Log dir $4, IP $5" >> "$4/$1_log.txt"
 echo "masscan results" >> "$4/$1_log.txt"
-masscan "$5" -p0-65535 --rate 100000 --oG "$3/$1.res" > "$4/$1_log.txt"
+masscan "$5" -p0-65535 --max-rate 1800 --oG "$3/$1.res" > "$4/$1_log.txt"
 # Replaced with masscan!
 #nmap -sS -p- -T4 "$1" -oG "$3/$1.res" > /dev/null 2>&1
 #ls "$3/$1.res"

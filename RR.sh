@@ -520,7 +520,7 @@ for entry in $(cat "$SAVEDIR/recon-$todate/mass.txt" | sort | uniq ); do
 		$TOOLDIR/RR/support/nmapHost.sh "$domain" "$NMAP_DIR" "$TMPDIR" "$LOGS/NMAP" "$ip" &
 		check "NMAP as background task"
 		if [ $run -gt 10 ]
-		then
+			then
 			print "Hit 10 concurrent scans - waiting to not run out of memory"
 			run=0
 			wait
