@@ -19,7 +19,9 @@ __________        ___.    .__       /\         __________
  - [ ] Rewrite LazyRecon for Interlace and debugging!
  - [ ] Support recursion over subdomains
  - [ ] Move functions from scan.sh to this script for recursiveness
- - [ ] Add checking for SQLI automatically
- - [ ] Add checking for request smuggling automatically
+ - [x] Add checking for SQLI automatically
+ - [x] Add checking for request smuggling automatically
+ - [ ] Refactor to have 1 main script and 2 sub-scripts: 1 for recon and one for vuln detection.
+ - [ ] Rewrite in Python?
   
  
