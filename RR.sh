@@ -222,7 +222,8 @@ print "Starting Amass"
 amass enum -norecursive -noalts -d "$domain" -o "$TMPDIR/domains.txt"
 check "Amass"
 # Moving results due to weird amass behaviour
-amass enum -norecursive -noalts -dprint "Moving results"
+amass enum -norecursive -noalts #-dprint "Moving results"
+# TODO check change where the above ending was commented out due to error
 cp "$TMPDIR/domains.txt" "$SAVEDIR/domains.txt"
 check "Move Amass results"
 
@@ -253,7 +254,7 @@ print "Subjack for search subdomains takeover"
 subjack -w "$SAVEDIR/domains.txt" -t "$subjackThreads" -timeout "$subjackTime" -ssl -c "/root/go/src/github.com/haccer/subjack/fingerprints.json" -v 3 >> "$SAVEDIR/subjack.txt"
 check "Subjack"
 cat "$SAVEDIR/subjack.txt" | grep -v "[Not Vulnerable]" >> "$SAVEDIR/subjack_vuln.txt"
-lines=$(wc -l "$SAVEDIR/subjack_vuln.txt")
+lines=$(wc -l "$SAVEDIR/subjack_vuln.txt" | cut -d' ' -f1)
 if [ $lines -gt 0 ];
 then
 	python3 /root/slackboth/alert.py "Subdomain vulnerable to hijacking! Check $SAVEDIR/subjack_vuln.txt"
@@ -498,7 +499,7 @@ for entry in $(cat "$SAVEDIR/recon-$todate/mass.txt" | sort | uniq ); do
 	domaindot=$(echo $entry | awk -F " " '{print $1}')
 	domain=${domaindot::-1}
 	#echo "domaindot: $domaindot domain : $domain"
-	dnstype=$(echo $entry | awk -F " " '{print $2}')·
+	dnstype=$(echo $entry | awk -F " " '{print $2}'| tr -d '[:space:]')
 	#echo "DNSTYPE: $dnstype"
 	ip=""
 	if [[ $dnstype == "CNAME" ]];
@@ -557,14 +558,16 @@ echo $(ls -la $SAVEDIR/smuggling)
 run=0
 for entry in $(cat "$SAVEDIR/alive.txt" | sort | uniq ); do
 	((run++))
-	python3 $TOOLDIR/smuggler/smuggler.py -m POST -u "$entry" -l "$SAVEDIR/smuggling/$entry-logfile.txt" &
-	python3 $TOOLDIR/smuggler/smuggler.py -m GET -u "$entry" -l "$SAVEDIR/smuggling/$entry-logfile.txt" &
-	python3 $TOOLDIR/smuggler/smuggler.py -m PUT -u "$entry" -l "$SAVEDIR/smuggling/$entry-logfile.txt" &
-	python3 $TOOLDIR/smuggler/smuggler.py -m DELETE -u "$entry" -l "$SAVEDIR/smuggling/$entry-logfile.txt" &
+	# Have to remove invalid path characters (//)
+	SMUGLOG=$(echo "$SAVEDIR/smuggling/$entry-logfile.txt" | sed 's~http[s]*://~~g')
+	python3 $TOOLDIR/smuggler/smuggler.py -m POST -u "$entry" -l "$SMUGLOG" &
+	python3 $TOOLDIR/smuggler/smuggler.py -m GET -u "$entry" -l "$SMUGLOG" &
+	python3 $TOOLDIR/smuggler/smuggler.py -m PUT -u "$entry" -l "$SMUGLOG" &
+	python3 $TOOLDIR/smuggler/smuggler.py -m DELETE -u "$entry" -l "$SMUGLOG" &
 	check "Request smuggling"
-	if [ $run -gt 10 ]
+	if [ $run -gt 6 ]
 		then
-			print "Hit 10 concurrent scans - waiting to not run out of memory"
+			print "Hit 6(*4) concurrent scans - waiting to not run out of memory"
 			run=0
 			wait
 	fi

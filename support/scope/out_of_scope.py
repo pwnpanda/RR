@@ -44,6 +44,9 @@ for patt in deny:
 remove_all.sort()
 res.sort()
 scan = list(set(res) - set(remove_all))
+if len(res) == len(scan):
+    print("No results were removed")
+    exit(-1)
 #print(F"Removed {remove_all}")
 #print(F"Output {scan}")
 
