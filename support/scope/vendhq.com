@@ -2,187 +2,132 @@
     "target": {
         "scope": {
             "advanced_mode": true,
-            "exclude": [],
+            "exclude": [
+                {
+                    "enabled": true,
+                    "file": "^/.*",
+                    "host": "^partners\\.vendhq\\.com$",
+                    "port": "^80$",
+                    "protocol": "http"
+                },
+                {
+                    "enabled": true,
+                    "file": "^/.*",
+                    "host": "^partners\\.vendhq\\.com$",
+                    "port": "^443$",
+                    "protocol": "https"
+                },
+                {
+                    "enabled": true,
+                    "file": "^/.*",
+                    "host": "^track\\.api\\.vendhq\\.com$",
+                    "port": "^80$",
+                    "protocol": "http"
+                },
+                {
+                    "enabled": true,
+                    "file": "^/.*",
+                    "host": "^track\\.api\\.vendhq\\.com$",
+                    "port": "^443$",
+                    "protocol": "https"
+                },
+                {
+                    "enabled": true,
+                    "file": "^/.*",
+                    "host": "^support\\.vendhq\\.com$",
+                    "port": "^80$",
+                    "protocol": "http"
+                },
+                {
+                    "enabled": true,
+                    "file": "^/.*",
+                    "host": "^support\\.vendhq\\.com$",
+                    "port": "^443$",
+                    "protocol": "https"
+                },
+                {
+                    "enabled": true,
+                    "file": "^/.*",
+                    "host": "^your-store\\.vendecommerce\\.com$",
+                    "port": "^80$",
+                    "protocol": "http"
+                },
+                {
+                    "enabled": true,
+                    "file": "^/.*",
+                    "host": "^your-store\\.vendecommerce\\.com$",
+                    "port": "^443$",
+                    "protocol": "https"
+                },
+                {
+                    "enabled": true,
+                    "file": "^/.*",
+                    "host": "^partnerportal\\.vendhq\\.com$",
+                    "port": "^80$",
+                    "protocol": "http"
+                },
+                {
+                    "enabled": true,
+                    "file": "^/.*",
+                    "host": "^partnerportal\\.vendhq\\.com$",
+                    "port": "^443$",
+                    "protocol": "https"
+                }
+            ],
             "include": [
                 {
                     "enabled": true,
                     "file": "^/.*",
-                    "host": "^www\\.corda\\.net$",
+                    "host": "^your-store\\.vendhq\\.com$",
                     "port": "^80$",
                     "protocol": "http"
                 },
                 {
                     "enabled": true,
                     "file": "^/.*",
-                    "host": "^www\\.corda\\.net$",
+                    "host": "^your-store\\.vendhq\\.com$",
                     "port": "^443$",
                     "protocol": "https"
                 },
                 {
                     "enabled": true,
                     "file": "^/.*",
-                    "host": "^www\\.r3\\.com$",
+                    "host": "^secure\\.vendhq\\.com$",
                     "port": "^80$",
                     "protocol": "http"
                 },
                 {
                     "enabled": true,
                     "file": "^/.*",
-                    "host": "^www\\.r3\\.com$",
+                    "host": "^secure\\.vendhq\\.com$",
                     "port": "^443$",
                     "protocol": "https"
                 },
                 {
                     "enabled": true,
                     "file": "^/.*",
-                    "host": "^r3cev\\.com$",
+                    "host": "^developers\\.vendhq\\.com$",
                     "port": "^80$",
                     "protocol": "http"
                 },
                 {
                     "enabled": true,
                     "file": "^/.*",
-                    "host": "^r3cev\\.com$",
+                    "host": "^developers\\.vendhq\\.com$",
                     "port": "^443$",
                     "protocol": "https"
                 },
                 {
                     "enabled": true,
                     "file": "^/.*",
-                    "host": "^ide\\.corda\\.net$",
+                    "host": "^www\\.vendhq\\.com$",
                     "port": "^80$",
                     "protocol": "http"
                 },
                 {
                     "enabled": true,
                     "file": "^/.*",
-                    "host": "^ide\\.corda\\.net$",
-                    "port": "^443$",
-                    "protocol": "https"
-                },
-                {
-                    "enabled": true,
-                    "file": "^/.*",
-                    "host": "^marketplace\\.r3\\.com$",
-                    "port": "^80$",
-                    "protocol": "http"
-                },
-                {
-                    "enabled": true,
-                    "file": "^/.*",
-                    "host": "^marketplace\\.r3\\.com$",
-                    "port": "^443$",
-                    "protocol": "https"
-                },
-                {
-                    "enabled": true,
-                    "file": "^/.*",
-                    "host": "^testnet\\.r3\\.com$",
-                    "port": "^80$",
-                    "protocol": "http"
-                },
-                {
-                    "enabled": true,
-                    "file": "^/.*",
-                    "host": "^testnet\\.r3\\.com$",
-                    "port": "^443$",
-                    "protocol": "https"
-                },
-                {
-                    "enabled": true,
-                    "file": "^/.*",
-                    "host": "^test\\.corda\\.net$",
-                    "port": "^80$",
-                    "protocol": "http"
-                },
-                {
-                    "enabled": true,
-                    "file": "^/.*",
-                    "host": "^test\\.corda\\.net$",
-                    "port": "^443$",
-                    "protocol": "https"
-                },
-                {
-                    "enabled": true,
-                    "file": "^/.*",
-                    "host": "^development\\.testnet\\.r3\\.com$",
-                    "port": "^80$",
-                    "protocol": "http"
-                },
-                {
-                    "enabled": true,
-                    "file": "^/.*",
-                    "host": "^development\\.testnet\\.r3\\.com$",
-                    "port": "^443$",
-                    "protocol": "https"
-                },
-                {
-                    "enabled": true,
-                    "file": "^/.*",
-                    "host": "^r3\\.com$",
-                    "port": "^80$",
-                    "protocol": "http"
-                },
-                {
-                    "enabled": true,
-                    "file": "^/.*",
-                    "host": "^r3\\.com$",
-                    "port": "^443$",
-                    "protocol": "https"
-                },
-                {
-                    "enabled": true,
-                    "file": "^/.*",
-                    "host": "^docs\\.corda\\.net$",
-                    "port": "^80$",
-                    "protocol": "http"
-                },
-                {
-                    "enabled": true,
-                    "file": "^/.*",
-                    "host": "^docs\\.corda\\.net$",
-                    "port": "^443$",
-                    "protocol": "https"
-                },
-                {
-                    "enabled": true,
-                    "file": "^/.*",
-                    "host": "^r3-cev\\.atlassian\\.net$",
-                    "port": "^80$",
-                    "protocol": "http"
-                },
-                {
-                    "enabled": true,
-                    "file": "^/.*",
-                    "host": "^r3-cev\\.atlassian\\.net$",
-                    "port": "^443$",
-                    "protocol": "https"
-                },
-                {
-                    "enabled": true,
-                    "file": "^/.*",
-                    "host": "^slack\\.corda\\.net$",
-                    "port": "^80$",
-                    "protocol": "http"
-                },
-                {
-                    "enabled": true,
-                    "file": "^/.*",
-                    "host": "^slack\\.corda\\.net$",
-                    "port": "^443$",
-                    "protocol": "https"
-                },
-                {
-                    "enabled": true,
-                    "file": "^//corda.*",
-                    "host": "^github\\.com$",
-                    "port": "^80$",
-                    "protocol": "http"
-                },
-                {
-                    "enabled": true,
-                    "file": "^//corda.*",
-                    "host": "^github\\.com$",
+                    "host": "^www\\.vendhq\\.com$",
                     "port": "^443$",
                     "protocol": "https"
                 }
